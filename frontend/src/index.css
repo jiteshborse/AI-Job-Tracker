@@ -1,0 +1,208 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Global hover effects */
+button:not(:disabled):hover {
+  transform: translateY(-2px);
+  transition: all 0.2s ease;
+}
+
+a:hover {
+  opacity: 0.8;
+  transition: opacity 0.2s ease;
+}
+
+input:hover,
+textarea:hover,
+select:hover {
+  border-color: #667eea;
+  transition: border-color 0.2s ease;
+}
+
+/* Card hover effects */
+[class*="card"]:hover,
+[class*="Card"]:hover,
+[class*="box"]:hover,
+[class*="Box"]:hover {
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+/* Icon button hover effects */
+[aria-label]:hover {
+  transform: scale(1.05);
+  transition: transform 0.2s ease;
+}
+
+/* Link hover effects */
+[role="button"]:hover {
+  cursor: pointer;
+  opacity: 0.9;
+  transition: opacity 0.2s ease;
+}
+
+/* Badge hover effects */
+[class*="badge"]:hover,
+[class*="Badge"]:hover,
+[class*="tag"]:hover,
+[class*="Tag"]:hover {
+  transform: scale(1.05);
+  transition: transform 0.2s ease;
+  cursor: pointer;
+}
+
+/* Menu item hover effects */
+[role="menuitem"]:hover {
+  background-color: rgba(102, 126, 234, 0.1);
+  transition: background-color 0.2s ease;
+}
+
+/* Smooth transitions for all interactive elements */
+button,
+a,
+input,
+textarea,
+select,
+[role="button"],
+[role="menuitem"] {
+  transition: all 0.2s ease;
+}
+
+/* Animation keyframes */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Apply animations */
+.fade-in {
+  animation: fadeIn 0.3s ease;
+}
+
+.slide-up {
+  animation: slideUp 0.4s ease;
+}
+
+.slide-in {
+  animation: slideIn 0.3s ease;
+}
+
+.scale-in {
+  animation: scaleIn 0.3s ease;
+}
+
+/* Special hover effect for every 3rd card in grid layout - exclude AIChat */
+.chakra-ui-light [style*="display: grid"]:not([class*="chat"]) > *:nth-child(3n),
+.chakra-ui-dark [style*="display: grid"]:not([class*="chat"]) > *:nth-child(3n),
+div[style*="grid-template-columns"]:not([class*="chat"]):not([style*="position: fixed"]) > *:nth-child(3n) {
+  position: relative;
+}
+
+.chakra-ui-light [style*="display: grid"]:not([class*="chat"]) > *:nth-child(3n):hover,
+.chakra-ui-dark [style*="display: grid"]:not([class*="chat"]) > *:nth-child(3n):hover,
+div[style*="grid-template-columns"]:not([class*="chat"]):not([style*="position: fixed"]) > *:nth-child(3n):hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 20px 40px rgba(102, 126, 234, 0.3);
+  z-index: 10;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.chakra-ui-light [style*="display: grid"]:not([class*="chat"]) > *:nth-child(3n):hover > div,
+.chakra-ui-dark [style*="display: grid"]:not([class*="chat"]) > *:nth-child(3n):hover > div,
+div[style*="grid-template-columns"]:not([class*="chat"]):not([style*="position: fixed"]) > *:nth-child(3n):hover > div {
+  position: relative;
+  z-index: 20;
+  pointer-events: auto;
+}
+
+.chakra-ui-light [style*="display: grid"]:not([class*="chat"]) > *:nth-child(3n):hover > div::before,
+.chakra-ui-dark [style*="display: grid"]:not([class*="chat"]) > *:nth-child(3n):hover > div::before,
+div[style*="grid-template-columns"]:not([class*="chat"]):not([style*="position: fixed"]) > *:nth-child(3n):hover > div::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  z-index: -1;
+  opacity: 0.5;
+  animation: borderPulse 1.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes borderPulse {
+  0%, 100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
