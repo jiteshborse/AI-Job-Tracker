@@ -25,25 +25,48 @@ export const AppProvider = ({ children }) => {
     const [showResumeUpload, setShowResumeUpload] = useState(false);
     const [isFirstLogin, setIsFirstLogin] = useState(true);
     const [pendingConfirmation, setPendingConfirmation] = useState(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalJobs, setTotalJobs] = useState(0);
 
     // Demo user ID
     const userId = 'demo-user';
 
     // Fetch jobs with filters
-    const fetchJobs = async (customFilters = {}) => {
+    const fetchJobs = async (customFilters = {}, page = 1, append = false) => {
         setLoading(true);
         try {
             // Merge custom filters with current filters
-            const allFilters = { ...filters, ...customFilters, userId };
+            const allFilters = { ...filters, ...customFilters, userId, page };
             const response = await jobApi.getJobs(allFilters);
-            setJobs(response.data.jobs || []);
+            const newJobs = response.data.jobs || [];
+            
+            // Append jobs if loading more, otherwise replace
+            if (append && page > 1) {
+                setJobs(prevJobs => [...prevJobs, ...newJobs]);
+            } else {
+                setJobs(newJobs);
+                setCurrentPage(1); // Reset to page 1 on new search
+            }
+            
             setBestMatches(response.data.bestMatches || []);
+            setTotalJobs(response.data.total || newJobs.length);
+            if (page === 1) {
+                setCurrentPage(1);
+            } else {
+                setCurrentPage(page);
+            }
         } catch (error) {
             console.error('Error fetching jobs:', error);
             toast.error('Failed to load jobs');
         } finally {
             setLoading(false);
         }
+    };
+
+    // Load more jobs (next page)
+    const loadMoreJobs = async () => {
+        const nextPage = currentPage + 1;
+        await fetchJobs(filters, nextPage, true); // append = true
     };
     // Fetch applications
     const fetchApplications = async () => {
@@ -233,6 +256,9 @@ export const AppProvider = ({ children }) => {
             setShowResumeUpload,
             isFirstLogin,
             fetchJobs,
+            loadMoreJobs,
+            currentPage,
+            totalJobs,
             uploadResume,
             trackApplication,
             updateApplicationStatus,

@@ -41,8 +41,12 @@ async function routes(fastify, options) {
             workMode,
             datePosted,
             matchScore,
+            page = 1,
             userId = 'demo-user' // Default for demo
         } = request.query;
+
+        const pageNum = Math.max(1, parseInt(page) || 1);
+        const itemsPerPage = 20;
 
         let filteredJobs = [];
 
@@ -184,10 +188,23 @@ async function routes(fastify, options) {
         // Sort by match score (highest first)
         finalJobs.sort((a, b) => b.matchScore - a.matchScore);
 
+        // Apply pagination
+        const totalJobs = finalJobs.length;
+        const totalPages = Math.ceil(totalJobs / itemsPerPage);
+        const startIndex = (pageNum - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        const paginatedJobs = finalJobs.slice(startIndex, endIndex);
+
+        console.log(`📄 Page ${pageNum}/${totalPages}: Returning ${paginatedJobs.length} jobs (total: ${totalJobs})`);
+
         return {
-            jobs: finalJobs,
-            total: finalJobs.length,
-            bestMatches: finalJobs.slice(0, 8) // Top matches
+            jobs: paginatedJobs,
+            total: totalJobs,
+            page: pageNum,
+            pageSize: itemsPerPage,
+            totalPages: totalPages,
+            hasMore: pageNum < totalPages,
+            bestMatches: finalJobs.slice(0, 8) // Top matches (always return top 8)
         };
     });
 

@@ -33,7 +33,7 @@ import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 
 const JobFeed = () => {
-    const { jobs, bestMatches, loading, fetchJobs, userResume, setFilters, applications } = useApp();
+    const { jobs, bestMatches, loading, fetchJobs, loadMoreJobs, currentPage, totalJobs, userResume, setFilters, applications } = useApp();
     const [viewMode, setViewMode] = useState('grid');
 
     const cardBg = useColorModeValue('white', 'gray.800');
@@ -325,6 +325,22 @@ const JobFeed = () => {
                 </Grid>
             )}
 
+            {/* Load More Button (outside grid, not repeated per job) */}
+            {!loading && jobs.length > 0 && typeof totalJobs === 'number' && jobs.length < totalJobs && (
+                <Flex justifyContent="center" mt={10} mb={6}>
+                    <Button
+                        variant="outline"
+                        colorScheme="blue"
+                        rightIcon={<ChevronRight size={18} />}
+                        onClick={loadMoreJobs}
+                        isLoading={loading}
+                        size="lg"
+                    >
+                        Load More Jobs
+                    </Button>
+                </Flex>
+            )}
+
             {/* No Jobs State */}
             {!loading && jobs.length === 0 && (
                 <Box
@@ -348,19 +364,6 @@ const JobFeed = () => {
                         Reset Filters
                     </Button>
                 </Box>
-            )}
-
-            {/* Load More Button */}
-            {!loading && jobs.length > 0 && (
-                <Flex justifyContent="center" mt={10}>
-                    <Button
-                        variant="outline"
-                        rightIcon={<ChevronRight size={18} />}
-                        onClick={() => toast.success('More jobs would load from real API')}
-                    >
-                        Load More Jobs
-                    </Button>
-                </Flex>
             )}
         </Box>
     );

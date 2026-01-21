@@ -1,0 +1,56 @@
+JOHN DOE
+john.doe@email.com | (555) 123-4567 | linkedin.com/in/johndoe
+
+PROFESSIONAL SUMMARY
+Experienced Full Stack Developer with 5+ years of expertise in building scalable web applications using modern technologies. Proficient in JavaScript, React, Node.js, and cloud platforms. Proven ability to lead development teams and deliver high-quality software solutions.
+
+TECHNICAL SKILLS
+Programming Languages: JavaScript, TypeScript, Python, Java, HTML, CSS, SQL
+Frontend: React, Next.js, Vue.js, Angular, Redux, Chakra UI
+Backend: Node.js, Express, Fastify, Django, REST API, GraphQL
+Databases: MongoDB, PostgreSQL, MySQL, NoSQL
+Cloud & DevOps: AWS, Docker, Kubernetes, CI/CD, GitHub Actions
+Tools & Platforms: Git, Git, VS Code, Jest, Webpack, Vite
+
+PROFESSIONAL EXPERIENCE
+
+Senior Full Stack Developer | Tech Company Inc. | 2022 - Present
+- Led development of microservices architecture handling 100K+ daily requests
+- Implemented React-based dashboard increasing user engagement by 40%
+- Managed AWS infrastructure and Docker containerization
+- Mentored junior developers and code reviews
+- Technologies: React, Node.js, AWS, Docker, PostgreSQL
+
+Full Stack Developer | StartUp Co. | 2020 - 2022
+- Developed full-stack e-commerce platform using React and Express
+- Improved API performance by 60% through optimization
+- Implemented CI/CD pipelines using GitHub Actions
+- Technologies: JavaScript, React, Node.js, MongoDB
+
+Junior Developer | Web Solutions LLC | 2019 - 2020
+- Developed responsive web applications using HTML, CSS, JavaScript
+- Collaborated with design team on UI/UX improvements
+- Participated in Agile development cycles
+
+EDUCATION
+
+Bachelor of Science in Computer Science
+State University | Graduated 2019
+
+CERTIFICATIONS
+- AWS Certified Solutions Architect
+- Kubernetes Administration Certification
+- React Advanced Patterns Course
+
+PROJECTS
+AI Job Tracker - Full stack application for job search and application tracking
+- React frontend with Chakra UI
+- Fastify backend with OpenAI integration
+- Real-time job matching using AI
+
+Portfolio Website - Personal portfolio showcasing projects
+- Next.js with TypeScript
+- Hosted on Vercel
+
+LANGUAGES
+English (Fluent), Spanish (Conversational)
