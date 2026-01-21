@@ -121,9 +121,8 @@ export const AppProvider = ({ children }) => {
                 setIsFirstLogin(false); // Resume uploaded, first login complete
                 toast.success('Resume uploaded successfully!');
                 
-                // Fetch jobs based on resume skills (use top skill as role filter)
-                const topSkill = skills[0] || 'software engineer';
-                fetchJobs({ role: topSkill }); // Search jobs matching resume skills
+                // Fetch jobs based on resume skills - backend will use extracted skills
+                fetchJobs(); // No role param - lets backend use resume skills for intelligent search
                 return response.data;
             }
         } catch (error) {
@@ -159,7 +158,7 @@ export const AppProvider = ({ children }) => {
     // Update application status
     const updateApplicationStatus = async (appId, status) => {
         try {
-            await applicationApi.updateStatus(appId, status);
+            await applicationApi.updateStatus(appId, status, userId);
             toast.success('Status updated!');
             fetchApplications();
         } catch (error) {

@@ -36,8 +36,8 @@ export const applicationApi = {
     trackApplication: (data) =>
         api.post('/applications/track', data),
 
-    updateStatus: (appId, status) =>
-        api.put(`/applications/${appId}/status`, { status }),
+    updateStatus: (appId, status, userId) =>
+        api.put(`/applications/${appId}/status`, { status, userId }),
 
     getApplications: (filters = {}) =>
         api.get('/applications', { params: filters }),

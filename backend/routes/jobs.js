@@ -50,8 +50,24 @@ async function routes(fastify, options) {
 
         let filteredJobs = [];
 
-        // Fetch jobs from API with caching
-        const cacheKey = `jobs_${role || 'default'}_${location || 'all'}`;
+        // Get user's resume to fetch relevant jobs
+        const userResume = storage.getResume(userId);
+        let searchKeyword = role || 'software engineer';
+        let useResumeSkills = false;
+        
+        // If user has resume with skills and no explicit role filter, use resume skills
+        if (userResume && userResume.extractedInfo && userResume.extractedInfo.skills) {
+            const resumeSkills = userResume.extractedInfo.skills;
+            if (resumeSkills.length > 0 && !role) {
+                // Use top skills from resume for intelligent job search
+                searchKeyword = resumeSkills.slice(0, 3).join(' ');
+                useResumeSkills = true;
+                console.log(`🎯 Searching jobs based on resume skills: ${searchKeyword}`);
+            }
+        }
+
+        // Fetch jobs from API with caching (include userId for personalized results)
+        const cacheKey = `jobs_${userId}_${role || 'default'}_${location || 'all'}_${useResumeSkills}`;
         const cached = jobCache.get(cacheKey);
 
         if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
@@ -59,21 +75,6 @@ async function routes(fastify, options) {
             filteredJobs = [...cached.data];
         } else {
             console.log('🔄 Fetching fresh job data...');
-            
-            // Get user's resume to fetch relevant jobs
-            const userResume = storage.getResume(userId);
-            let searchKeyword = role || 'software engineer';
-            
-            // If user has resume with skills, use primary skill for job search
-            if (userResume && userResume.extractedInfo && userResume.extractedInfo.skills) {
-                const resumeSkills = userResume.extractedInfo.skills;
-                if (resumeSkills.length > 0 && !role) {
-                    // Use top skills from resume if no explicit role filter
-                    searchKeyword = resumeSkills.slice(0, 3).join(' ');
-                    console.log(`🎯 Searching jobs based on resume skills: ${searchKeyword}`);
-                }
-            }
-            
             filteredJobs = await fetchJobsFromAPI(searchKeyword, location);
             jobCache.set(cacheKey, { data: filteredJobs, timestamp: Date.now() });
         }
