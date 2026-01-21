@@ -111,14 +111,19 @@ export const AppProvider = ({ children }) => {
             const response = await resumeApi.uploadResume(formData);
 
             if (response.data.success) {
+                const skills = response.data.skills || [];
                 setUserResume({
                     hasResume: true,
-                    textLength: response.data.textLength || 0
+                    textLength: response.data.textLength || 0,
+                    skills: skills
                 });
                 setShowResumeUpload(false);
                 setIsFirstLogin(false); // Resume uploaded, first login complete
                 toast.success('Resume uploaded successfully!');
-                fetchJobs(); // Re-fetch jobs for new match scores
+                
+                // Fetch jobs based on resume skills (use top skill as role filter)
+                const topSkill = skills[0] || 'software engineer';
+                fetchJobs({ role: topSkill }); // Search jobs matching resume skills
                 return response.data;
             }
         } catch (error) {

@@ -59,7 +59,22 @@ async function routes(fastify, options) {
             filteredJobs = [...cached.data];
         } else {
             console.log('🔄 Fetching fresh job data...');
-            filteredJobs = await fetchJobsFromAPI(role || 'software engineer', location);
+            
+            // Get user's resume to fetch relevant jobs
+            const userResume = storage.getResume(userId);
+            let searchKeyword = role || 'software engineer';
+            
+            // If user has resume with skills, use primary skill for job search
+            if (userResume && userResume.extractedInfo && userResume.extractedInfo.skills) {
+                const resumeSkills = userResume.extractedInfo.skills;
+                if (resumeSkills.length > 0 && !role) {
+                    // Use top skills from resume if no explicit role filter
+                    searchKeyword = resumeSkills.slice(0, 3).join(' ');
+                    console.log(`🎯 Searching jobs based on resume skills: ${searchKeyword}`);
+                }
+            }
+            
+            filteredJobs = await fetchJobsFromAPI(searchKeyword, location);
             jobCache.set(cacheKey, { data: filteredJobs, timestamp: Date.now() });
         }
 
