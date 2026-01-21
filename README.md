@@ -163,6 +163,27 @@ npm run dev
 ```
 Frontend runs on `http://localhost:3000`
 
+## ☁️ Deploy to Vercel (Frontend)
+
+You can deploy the React frontend to Vercel and point it at your hosted backend.
+
+### Option A: Frontend on Vercel, Backend on Render/Railway (Recommended)
+1. Deploy backend (Fastify) to a Node host like Render/Railway/Fly.io.
+2. Copy the backend URL and set it as `VITE_API_URL` in Vercel Project Settings → Environment Variables.
+3. In this repo, the frontend has a Vercel config at `frontend/vercel.json`.
+4. In Vercel, create a new project and set "Root Directory" to `frontend/`.
+5. Build command: `npm run build`, Output directory: `dist` (already configured).
+6. Trigger Deploy. The app will call your backend via `VITE_API_URL`.
+
+### Option B: Both on Vercel (requires adapting Fastify to Serverless)
+- Vercel Serverless Functions require an API entry in `/api/*.js` style. Fastify needs a wrapper or route migration.
+- If you want this path, open an issue and we’ll create a serverless function adapter for the existing routes.
+
+### Environment Variables on Vercel
+- Set in Project Settings → Environment Variables:
+	- `VITE_API_URL=https://your-backend-host.example.com/api`
+- Re-deploy after changing environment variables.
+
 ## 🔑 API Keys Setup
 
 ### OpenAI API Key
