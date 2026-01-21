@@ -155,10 +155,18 @@ class JobApiService {
             'Testing', 'Jest', 'Pytest', 'Selenium', 'Cypress',
             'Agile', 'Scrum', 'Kanban', 'DevOps', 'Linux'
         ];
-        
-        return commonSkills.filter(skill =>
-            new RegExp(`\\b${skill}\\b`, 'i').test(text)
-        );
+        // Escape regex special characters (e.g., C++, C#)
+        const escapeRegExp = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+        return commonSkills.filter(skill => {
+            const pattern = `\\b${escapeRegExp(skill)}\\b`;
+            try {
+                return new RegExp(pattern, 'i').test(text);
+            } catch {
+                // Fallback: simple substring match if regex fails
+                return text.toLowerCase().includes(skill.toLowerCase());
+            }
+        });
     }
 
     /**

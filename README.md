@@ -134,6 +134,15 @@ ADZUNA_APP_ID=your_adzuna_app_id
 ADZUNA_APP_KEY=your_adzuna_app_key
 ```
 
+Alternatively, copy the sample file:
+
+```bash
+cd backend
+copy .env.example .env
+```
+
+Never commit `.env` to GitHub. Use `.env.example` for placeholders.
+
 4. **Frontend Setup**
 ```bash
 cd ../frontend
