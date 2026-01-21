@@ -28,8 +28,13 @@ export const AppProvider = ({ children }) => {
     const [currentPage, setCurrentPage] = useState(1);
     const [totalJobs, setTotalJobs] = useState(0);
 
-    // Demo user ID
-    const userId = 'demo-user';
+    // Generate unique session ID for each visit (new session every time)
+    const [userId] = useState(() => {
+        // Clear any old data on fresh load
+        localStorage.clear();
+        sessionStorage.clear();
+        return `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    });
 
     // Fetch jobs with filters
     const fetchJobs = async (customFilters = {}, page = 1, append = false) => {
@@ -127,7 +132,7 @@ export const AppProvider = ({ children }) => {
     const trackApplication = useCallback((job) => {
         if (!job) return;
 
-        // Save job click for confirmation when user returns
+        // Set pending confirmation (no localStorage persistence)
         const record = {
             jobId: job.id,
             jobTitle: job.title,
@@ -136,7 +141,6 @@ export const AppProvider = ({ children }) => {
             timestamp: new Date().toISOString(),
         };
 
-        localStorage.setItem('lastJobClick', JSON.stringify(record));
         setPendingConfirmation(record);
 
         // Open job link in new tab
@@ -221,26 +225,20 @@ export const AppProvider = ({ children }) => {
         toast.success('Logged out successfully!');
     };
 
-    // Initialize
+    // Initialize - clear session and force new resume upload
     useEffect(() => {
-        checkResume();
+        // Clear any persisted data
+        localStorage.clear();
+        sessionStorage.clear();
+        
+        // Start fresh - always show resume upload modal
+        setShowResumeUpload(true);
+        setIsFirstLogin(true);
+        setUserResume(null);
+        
+        // Fetch initial jobs without resume
         fetchJobs();
-        fetchApplications();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
-    // Handle popup on page load
-    useEffect(() => {
-        const lastJob = localStorage.getItem('lastJobClick');
-        if (lastJob) {
-            try {
-                const jobData = JSON.parse(lastJob);
-                setPendingConfirmation(jobData);
-            } catch (err) {
-                console.error('Failed to parse lastJobClick', err);
-                localStorage.removeItem('lastJobClick');
-            }
-        }
     }, []);
 
     return (
