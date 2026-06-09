@@ -3,6 +3,7 @@ const mockJobs = require('../mockJobs');
 const aiService = require('../services/aiService');
 const storage = require('../storage');
 const jobApiService = require('../services/jobApiService');
+const { authenticate } = require('../middleware/auth');
 
 // Cache for API results
 const jobCache = new Map();
@@ -25,11 +26,14 @@ async function fetchJobsFromAPI(keyword, location) {
 }
 
 async function routes(fastify, options) {
-    // Health check endpoint
+    // Health check endpoint (Keep public)
     fastify.get('/health', async (request, reply) => {
         const health = await jobApiService.healthCheck();
         return health;
     });
+
+    // Apply authenticate hook to all other endpoints in this router
+    fastify.addHook('preHandler', authenticate);
 
     // Get all jobs with optional filtering
     fastify.get('/', async (request, reply) => {
@@ -41,28 +45,36 @@ async function routes(fastify, options) {
             workMode,
             datePosted,
             matchScore,
-            page = 1,
-            userId = 'demo-user' // Default for demo
+            page = 1
         } = request.query;
 
+        const userId = request.userId;
         const pageNum = Math.max(1, parseInt(page) || 1);
         const itemsPerPage = 20;
 
         let filteredJobs = [];
 
         // Get user's resume to fetch relevant jobs
-        const userResume = storage.getResume(userId);
+        const userResume = await storage.getResume(userId);
         let searchKeyword = role || 'software engineer';
         let useResumeSkills = false;
         
-        // If user has resume with skills and no explicit role filter, use resume skills
-        if (userResume && userResume.extractedInfo && userResume.extractedInfo.skills) {
-            const resumeSkills = userResume.extractedInfo.skills;
-            if (resumeSkills.length > 0 && !role) {
-                // Use top skills from resume for intelligent job search
-                searchKeyword = resumeSkills.slice(0, 3).join(' ');
-                useResumeSkills = true;
-                console.log(`🎯 Searching jobs based on resume skills: ${searchKeyword}`);
+        // If user has resume with skills and no explicit role filter, use resume primaryRole or skills
+        if (userResume && userResume.extractedInfo) {
+            const primaryRole = userResume.extractedInfo.primaryRole;
+            const resumeSkills = userResume.extractedInfo.skills || [];
+            
+            if (!role) {
+                if (primaryRole) {
+                    searchKeyword = primaryRole;
+                    useResumeSkills = true;
+                    console.log(`🎯 Searching jobs based on resume primary role: ${searchKeyword}`);
+                } else if (resumeSkills.length > 0) {
+                    // Fallback to top skills
+                    searchKeyword = resumeSkills.slice(0, 3).join(' ');
+                    useResumeSkills = true;
+                    console.log(`🎯 Searching jobs based on resume skills: ${searchKeyword}`);
+                }
             }
         }
 
@@ -86,10 +98,19 @@ async function routes(fastify, options) {
             );
         }
 
-        if (skills) {
-            const skillList = skills.split(',');
+        let querySkills = request.query.skills || request.query['skills[]'];
+        let skillList = [];
+        if (querySkills) {
+            if (Array.isArray(querySkills)) {
+                skillList = querySkills;
+            } else if (typeof querySkills === 'string') {
+                skillList = querySkills.split(',').map(s => s.trim()).filter(Boolean);
+            }
+        }
+
+        if (skillList.length > 0) {
             filteredJobs = filteredJobs.filter(job => {
-                const jobSkills = job.matchedSkills || [];
+                const jobSkills = job.skills || [];
                 return skillList.some(skill => 
                     jobSkills.some(js => js.toLowerCase().includes(skill.toLowerCase()))
                 );
@@ -103,8 +124,20 @@ async function routes(fastify, options) {
         }
 
         if (jobType) {
+            filteredJobs = filteredJobs.filter(job => {
+                const jt = (job.jobType || job.type || '').toLowerCase();
+                const filterVal = jobType.toLowerCase();
+                
+                if (jt === filterVal) return true;
+                if (filterVal === 'full-time' && jt === 'permanent') return true;
+                if (filterVal === 'contract' && jt === 'contract') return true;
+                return false;
+            });
+        }
+
+        if (workMode && workMode !== 'all') {
             filteredJobs = filteredJobs.filter(job => 
-                job.jobType && job.jobType.toLowerCase() === jobType.toLowerCase()
+                job.workMode && job.workMode.toLowerCase() === workMode.toLowerCase()
             );
         }
 
@@ -133,9 +166,6 @@ async function routes(fastify, options) {
                 });
             }
         }
-
-        // Get user's resume for matching
-        const userResume = storage.getResume(userId);
 
         // Calculate match scores if resume exists
         let jobsWithScores;

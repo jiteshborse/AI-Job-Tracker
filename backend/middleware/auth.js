@@ -1,16 +1,6 @@
-/**
- * Authentication middleware for Fastify
- */
+const jwt = require('jsonwebtoken');
 
-// Demo users
-const demoUsers = {
-    'demo-user': {
-        id: 'demo-user',
-        name: 'Demo User',
-        email: 'demo@jobtracker.com',
-        role: 'user'
-    }
-};
+const JWT_SECRET = process.env.JWT_SECRET || 'ai-job-tracker-super-secret-key-12345';
 
 // CORS configuration
 const corsOptions = {
@@ -19,21 +9,30 @@ const corsOptions = {
     allowedHeaders: ['Content-Type', 'Authorization', 'X-User-Id']
 };
 
-// Simple authentication middleware
+// JWT-based authentication middleware
 const authenticate = async (request, reply) => {
     try {
-        const userId = request.headers['x-user-id'] || 'demo-user';
-        const user = demoUsers[userId] || demoUsers['demo-user'];
+        const authHeader = request.headers['authorization'];
+        
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return reply.code(401).send({
+                error: 'Unauthorized',
+                message: 'Access token is missing or invalid'
+            });
+        }
 
-        // Attach user to request
-        request.user = user;
-        request.userId = user.id;
+        const token = authHeader.split(' ')[1];
+        const decoded = jwt.verify(token, JWT_SECRET);
+        
+        // Attach user ID to request
+        request.userId = decoded.userId;
+        request.userEmail = decoded.email;
 
     } catch (error) {
-        console.error('Auth error:', error);
+        console.error('Auth error:', error.message);
         return reply.code(401).send({
-            error: 'Authentication failed',
-            message: 'Please provide valid credentials'
+            error: 'Unauthorized',
+            message: 'Invalid or expired session token'
         });
     }
 };
@@ -41,7 +40,7 @@ const authenticate = async (request, reply) => {
 // File validation middleware
 const validateResumeUpload = async (request, reply) => {
     const allowedTypes = ['application/pdf', 'text/plain'];
-    const maxSize = 5 * 1024 * 1024; // 5MB
+    const maxSize = 10 * 1024 * 1024; // 10MB (aligned with server.js limits)
 
     if (!request.file) {
         return reply.code(400).send({
@@ -60,7 +59,7 @@ const validateResumeUpload = async (request, reply) => {
     if (request.file.size > maxSize) {
         return reply.code(400).send({
             error: 'File too large',
-            message: 'File size must be less than 5MB'
+            message: 'File size must be less than 10MB'
         });
     }
 };
@@ -68,6 +67,5 @@ const validateResumeUpload = async (request, reply) => {
 module.exports = {
     authenticate,
     corsOptions,
-    validateResumeUpload,
-    demoUsers
+    validateResumeUpload
 };

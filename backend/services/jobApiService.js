@@ -18,7 +18,7 @@ class JobApiService {
      */
     async searchJobs(options = {}) {
         const {
-            country = 'us',
+            country = process.env.ADZUNA_COUNTRY || 'us',
             keyword = 'javascript',
             location = '',
             page = 1,
@@ -85,6 +85,14 @@ class JobApiService {
             const description = this.cleanDescription(job.description);
             const skills = this.extractSkills(description);
             
+            let workMode = 'On-site';
+            const textToSearch = `${job.title} ${job.location?.display_name || ''} ${description}`.toLowerCase();
+            if (textToSearch.includes('remote') || textToSearch.includes('telecommute') || textToSearch.includes('wfh') || textToSearch.includes('work from home')) {
+                workMode = 'Remote';
+            } else if (textToSearch.includes('hybrid')) {
+                workMode = 'Hybrid';
+            }
+
             return {
                 id: `adzuna_${job.id}`,
                 title: job.title || 'Untitled Position',
@@ -102,6 +110,7 @@ class JobApiService {
                 source: 'adzuna',
                 category: job.category?.tag || 'general',
                 jobType: job.contract_type || 'permanent',
+                workMode: workMode,
                 // Skills extracted from job description
                 skills: skills,
                 // Add mock matching fields for now (will be calculated by AI service)

@@ -1,24 +1,28 @@
 const fastify = require('fastify');
 const storage = require('../storage');
+const { authenticate } = require('../middleware/auth');
 
 async function routes(fastify, options) {
+    // Apply authenticate hook to all endpoints in this router
+    fastify.addHook('preHandler', authenticate);
+
     // Track application
     fastify.post('/track', async (request, reply) => {
+        const userId = request.userId;
         const {
-            userId = 'demo-user',
             jobId,
             jobTitle,
             company,
             status = 'Applied',
             appliedDate = new Date().toISOString()
-        } = request.body;
+        } = request.body || {};
 
         if (!jobId || !jobTitle || !company) {
             reply.code(400).send({ error: 'Missing required fields' });
             return;
         }
 
-        const application = storage.addApplication(userId, {
+        const application = await storage.addApplication(userId, {
             jobId,
             jobTitle,
             company,
@@ -35,9 +39,9 @@ async function routes(fastify, options) {
 
     // Update application status
     fastify.put('/:id/status', async (request, reply) => {
-        const { userId = 'demo-user' } = request.body;
+        const userId = request.userId;
         const { id } = request.params;
-        const { status } = request.body;
+        const { status } = request.body || {};
 
         const validStatuses = ['Applied', 'Interview', 'Offer', 'Rejected'];
 
@@ -46,7 +50,7 @@ async function routes(fastify, options) {
             return;
         }
 
-        const updatedApp = storage.updateApplicationStatus(userId, id, status);
+        const updatedApp = await storage.updateApplicationStatus(userId, id, status);
 
         if (!updatedApp) {
             reply.code(404).send({ error: 'Application not found' });
@@ -61,8 +65,9 @@ async function routes(fastify, options) {
 
     // Get all applications for user
     fastify.get('/', async (request, reply) => {
-        const { userId = 'demo-user', status } = request.query;
-        let applications = storage.getApplications(userId);
+        const userId = request.userId;
+        const { status } = request.query;
+        let applications = await storage.getApplications(userId);
 
         // Filter by status if provided
         if (status) {
@@ -86,13 +91,31 @@ async function routes(fastify, options) {
 
     // Clear all applications for a user (used on logout)
     fastify.delete('/clear', async (request, reply) => {
-        const { userId = 'demo-user' } = request.query;
-        storage.clearApplications(userId);
+        const userId = request.userId;
+        await storage.clearApplications(userId);
 
         return {
             success: true,
             applications: [],
             message: 'Applications cleared'
+        };
+    });
+
+    // Delete single application
+    fastify.delete('/:id', async (request, reply) => {
+        const userId = request.userId;
+        const { id } = request.params;
+
+        const deleted = await storage.deleteApplication(userId, id);
+
+        if (!deleted) {
+            reply.code(404).send({ error: 'Application not found' });
+            return;
+        }
+
+        return {
+            success: true,
+            message: 'Application deleted successfully'
         };
     });
 }

@@ -5,19 +5,31 @@ import {
     Heading,
     Input,
     Select,
-    Checkbox,
-    CheckboxGroup,
     Button,
     Text,
-    Tag,
-    TagLabel,
-    TagCloseButton,
-    useColorModeValue,
     Flex,
     IconButton,
-    HStack
+    Accordion,
+    AccordionItem,
+    AccordionButton,
+    AccordionPanel,
+    AccordionIcon,
+    HStack,
+    InputGroup,
+    InputLeftElement
 } from '@chakra-ui/react';
-import { Filter, X } from 'lucide-react';
+import { 
+    Filter, 
+    X, 
+    Briefcase, 
+    MapPin, 
+    Clock, 
+    Layers, 
+    Calendar, 
+    Award, 
+    Search,
+    Wrench
+} from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import toast from 'react-hot-toast';
 
@@ -26,10 +38,10 @@ const Sidebar = () => {
     const [tempFilters, setTempFilters] = useState(filters);
     const [selectedSkills, setSelectedSkills] = useState(filters.skills || []);
 
-    const bgColor = useColorModeValue('white', 'gray.800');
-    const borderColor = useColorModeValue('gray.200', 'gray.700');
-    const sectionBg = useColorModeValue('gray.50', 'gray.900');
-    const accentGradient = 'linear(to-r, #5b8def, #7c5dfa)';
+    const bgColor = 'white';
+    const borderColor = 'rgba(226, 232, 240, 0.8)';
+    const sectionBg = 'gray.50';
+    const accentGradient = 'linear(to-r, #6366f1, #4f46e5)';
 
     const skillOptions = [
         'React', 'JavaScript', 'TypeScript', 'Node.js', 'Python', 'Java',
@@ -71,6 +83,7 @@ const Sidebar = () => {
     const handleApplyFilters = () => {
         setFilters(tempFilters);
         fetchJobs(tempFilters);
+        toast.success('Filters applied!');
     };
 
     const handleResetFilters = () => {
@@ -84,35 +97,16 @@ const Sidebar = () => {
             matchScore: 'all'
         };
 
-        // 1. Reset tempFilters (local sidebar state)
         setTempFilters(reset);
-
-        // 2. Reset selectedSkills (local sidebar state)
         setSelectedSkills([]);
-
-        // 3. Reset global filters (context state)
         setFilters(reset);
-
-        // 4. Fetch jobs with reset filters
         fetchJobs(reset);
-
-        // 5. Optional: Show success message
         toast.success('Filters reset successfully!');
     };
 
-    const removeSkill = (skill) => {
-        const newSkills = selectedSkills.filter(s => s !== skill);
-        setSelectedSkills(newSkills);
-        setTempFilters(prev => ({ ...prev, skills: newSkills }));
-    };
-
-    const handleInputChange = useCallback((field, value) => {
-        setTempFilters(prev => ({ ...prev, [field]: value }));
-    }, []);
-
     return (
         <>
-            {/* Sidebar - Always visible */}
+            {/* Sidebar Container */}
             <Box
                 position={{ base: 'static', md: 'fixed' }}
                 left={0}
@@ -120,238 +114,374 @@ const Sidebar = () => {
                 h={{ base: 'auto', md: 'calc(100vh - 4rem)' }}
                 w={{ base: 'full', md: '64' }}
                 bg={bgColor}
-                borderRight={{ base: 'none', md: '1px' }}
+                borderRight={{ base: 'none', md: '1px solid' }}
                 borderColor={borderColor}
                 overflowY={{ base: 'visible', md: 'auto' }}
                 zIndex={900}
                 p={{ base: 4, md: 5 }}
+                transition="all 0.3s ease"
             >
+                {/* Header Filter Panel */}
                 <Box
                     p={4}
-                    borderRadius="lg"
+                    borderRadius="2xl"
                     bgGradient={accentGradient}
                     color="white"
-                    mb={6}
-                    shadow="md"
+                    mb={5}
+                    shadow="0 8px 20px rgba(99, 102, 241, 0.15)"
                 >
-                        <Flex alignItems="center" justifyContent="space-between">
-                        <Flex alignItems="center" gap={3}>
+                    <Flex alignItems="center" justifyContent="space-between">
+                        <Flex alignItems="center" gap={2.5}>
                             <Box
-                                w={10}
-                                h={10}
-                                borderRadius="md"
-                                bg="whiteAlpha.300"
+                                w={9}
+                                h={9}
+                                borderRadius="xl"
+                                bg="whiteAlpha.200"
                                 display="flex"
                                 alignItems="center"
                                 justifyContent="center"
+                                backdropFilter="blur(5px)"
                             >
-                                <Filter size={18} />
+                                <Filter size={16} />
                             </Box>
                             <Box>
-                                <Heading size="sm" fontWeight="bold">Filters</Heading>
-                                <Text fontSize="xs" opacity={0.85}>Refine your job feed</Text>
+                                <Heading size="xs" fontWeight="800" letterSpacing="-0.2px">Filter Jobs</Heading>
+                                <Text fontSize="10px" opacity={0.8}>Refine job matches</Text>
                             </Box>
                         </Flex>
-                        <IconButton
-                            icon={<X size={16} />}
-                            size="sm"
-                            variant="ghost"
-                            onClick={handleResetFilters}
-                            aria-label="Reset filters"
-                            color="white"
-                            _hover={{ bg: 'whiteAlpha.300' }}
-                        />
+                        {(tempFilters.role || selectedSkills.length > 0 || tempFilters.location || tempFilters.jobType || tempFilters.workMode || tempFilters.datePosted !== 'any' || tempFilters.matchScore !== 'all') && (
+                            <IconButton
+                                icon={<X size={14} />}
+                                size="xs"
+                                variant="ghost"
+                                onClick={handleResetFilters}
+                                aria-label="Reset filters"
+                                color="white"
+                                _hover={{ bg: 'whiteAlpha.300' }}
+                                borderRadius="lg"
+                            />
+                        )}
                     </Flex>
-                    {selectedSkills.length > 0 && (
-                        <Text fontSize="xs" mt={3} opacity={0.9}>
-                            {selectedSkills.length} skills selected
-                        </Text>
-                    )}
                 </Box>
 
-                <VStack spacing={6} align="stretch">
-                    {/* Role Search */}
-                    <Box bg={sectionBg} p={4} borderRadius="lg" borderWidth="1px" borderColor={borderColor} shadow="sm" _hover={{ shadow: 'md' }}>
-                        <Text fontWeight="semibold" mb={2} fontSize="sm" color="gray.700">Job Title</Text>
-                        <Input
-                            placeholder="e.g., React Developer"
-                            value={tempFilters.role || ''}
-                            onChange={(e) => setTempFilters({ ...tempFilters, role: e.target.value })}
-                            size="sm"
-                            borderRadius="md"
-                        />
-                    </Box>
-
-                    {/* Skills */}
-                    <Box bg={sectionBg} p={4} borderRadius="lg" borderWidth="1px" borderColor={borderColor} shadow="sm" _hover={{ shadow: 'md' }}>
-                        <Text fontWeight="semibold" mb={2} fontSize="sm" color="gray.700">Skills</Text>
-                        <CheckboxGroup>
-                            <VStack
-                                align="start"
-                                spacing={2}
-                                maxH="200px"
-                                overflowY="auto"
-                                p={3}
-                                borderWidth="1px"
-                                borderRadius="md"
-                                bg={bgColor}
-                                css={{
-                                    '&::-webkit-scrollbar': {
-                                        width: '8px',
-                                    },
-                                    '&::-webkit-scrollbar-track': {
-                                        background: '#f1f1f1',
-                                        borderRadius: '10px',
-                                    },
-                                    '&::-webkit-scrollbar-thumb': {
-                                        background: '#888',
-                                        borderRadius: '10px',
-                                    },
-                                    '&::-webkit-scrollbar-thumb:hover': {
-                                        background: '#555',
-                                    },
-                                }}
+                {/* Collapsible Accordion Filters */}
+                <Accordion defaultIndex={[0, 1]} allowMultiple>
+                    {/* Job Title */}
+                    <AccordionItem border="none" mb={3}>
+                        <h2>
+                            <AccordionButton 
+                                px={3} 
+                                py={2} 
+                                borderRadius="xl" 
+                                _hover={{ bg: 'gray.50' }}
+                                display="flex"
+                                justifyContent="space-between"
                             >
-                                {skillOptions.map((skill) => (
-                                    <Checkbox
-                                        key={skill}
-                                        isChecked={selectedSkills.includes(skill)}
-                                        onChange={() => handleSkillToggle(skill)}
-                                        size="sm"
-                                        value={skill}
-                                        colorScheme="blue"
-                                        w="full"
-                                    >
-                                        <Text fontSize="sm">{skill}</Text>
-                                    </Checkbox>
-                                ))}
-                            </VStack>
-                        </CheckboxGroup>
-                        {selectedSkills.length > 0 && (
-                            <Box mt={3}>
-                                <Text fontSize="xs" mb={2} fontWeight="semibold" color="gray.600">Selected:</Text>
-                                <Flex flexWrap="wrap" gap={2}>
-                                    {selectedSkills.map((skill) => (
-                                        <Tag
-                                            key={skill}
-                                            size="sm"
-                                            colorScheme="blue"
-                                            borderRadius="full"
-                                            variant="subtle"
-                                        >
-                                            <TagLabel fontSize="xs">{skill}</TagLabel>
-                                            <TagCloseButton onClick={() => removeSkill(skill)} size="xs" />
-                                        </Tag>
-                                    ))}
+                                <Flex align="center" gap={2}>
+                                    <Briefcase size={15} className="text-indigo-500" style={{ color: '#6366f1' }} />
+                                    <Text fontSize="sm" fontWeight="700" color="gray.700">Job Title</Text>
                                 </Flex>
-                            </Box>
-                        )}
-                    </Box>
+                                <AccordionIcon />
+                            </AccordionButton>
+                        </h2>
+                        <AccordionPanel pb={2} pt={1} px={3}>
+                            <InputGroup size="sm">
+                                <InputLeftElement pointerEvents="none">
+                                    <Search size={14} color="#a0aec0" />
+                                </InputLeftElement>
+                                <Input
+                                    placeholder="e.g., React Developer"
+                                    value={tempFilters.role || ''}
+                                    onChange={(e) => setTempFilters({ ...tempFilters, role: e.target.value })}
+                                    borderRadius="lg"
+                                    bg="gray.50"
+                                    border="1px solid"
+                                    borderColor="gray.200"
+                                    _focus={{ borderColor: 'brand.500', bg: 'white', boxShadow: 'none' }}
+                                    fontSize="xs"
+                                />
+                            </InputGroup>
+                        </AccordionPanel>
+                    </AccordionItem>
 
-                    {/* Custom Divider Line */}
-                    <Box borderBottom="1px" borderColor={borderColor} my={2} />
+                    {/* Skills Toggle Tags */}
+                    <AccordionItem border="none" mb={3}>
+                        <h2>
+                            <AccordionButton 
+                                px={3} 
+                                py={2} 
+                                borderRadius="xl" 
+                                _hover={{ bg: 'gray.50' }}
+                                display="flex"
+                                justifyContent="space-between"
+                            >
+                                <Flex align="center" gap={2}>
+                                    <Wrench size={15} className="text-indigo-500" style={{ color: '#6366f1' }} />
+                                    <Text fontSize="sm" fontWeight="700" color="gray.700">Skills</Text>
+                                </Flex>
+                                <AccordionIcon />
+                            </AccordionButton>
+                        </h2>
+                        <AccordionPanel pb={2} pt={1} px={3}>
+                            <Flex flexWrap="wrap" gap={1.5} maxH="180px" overflowY="auto" pr={1} css={{
+                                '&::-webkit-scrollbar': { width: '4px' },
+                                '&::-webkit-scrollbar-thumb': { background: '#cbd5e1', borderRadius: '4px' }
+                            }}>
+                                {skillOptions.map((skill) => {
+                                    const isSelected = selectedSkills.includes(skill);
+                                    return (
+                                        <Button
+                                            key={skill}
+                                            size="xs"
+                                            variant={isSelected ? 'solid' : 'outline'}
+                                            bg={isSelected ? 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)' : 'transparent'}
+                                            color={isSelected ? 'white' : 'gray.600'}
+                                            borderColor={isSelected ? 'transparent' : 'gray.200'}
+                                            _hover={{
+                                                bg: isSelected ? 'linear-gradient(135deg, #4f46e5 0%, #4338ca 100%)' : 'rgba(99, 102, 241, 0.05)',
+                                                borderColor: isSelected ? 'transparent' : 'brand.300',
+                                            }}
+                                            borderRadius="full"
+                                            onClick={() => handleSkillToggle(skill)}
+                                            fontWeight="600"
+                                            fontSize="10px"
+                                            px={2.5}
+                                            py={1}
+                                            h="auto"
+                                        >
+                                            {skill}
+                                        </Button>
+                                    );
+                                })}
+                            </Flex>
+                        </AccordionPanel>
+                    </AccordionItem>
 
                     {/* Location */}
-                    <Box bg={sectionBg} p={4} borderRadius="lg" borderWidth="1px" borderColor={borderColor} shadow="sm" _hover={{ shadow: 'md' }}>
-                        <Text fontWeight="semibold" mb={2} fontSize="sm" color="gray.700">Location</Text>
-                        <Input
-                            placeholder="e.g., San Francisco"
-                            value={tempFilters.location || ''}
-                            onChange={(e) => setTempFilters({ ...tempFilters, location: e.target.value })}
-                            size="sm"
-                            borderRadius="md"
-                        />
-                    </Box>
+                    <AccordionItem border="none" mb={3}>
+                        <h2>
+                            <AccordionButton 
+                                px={3} 
+                                py={2} 
+                                borderRadius="xl" 
+                                _hover={{ bg: 'gray.50' }}
+                                display="flex"
+                                justifyContent="space-between"
+                            >
+                                <Flex align="center" gap={2}>
+                                    <MapPin size={15} className="text-indigo-500" style={{ color: '#6366f1' }} />
+                                    <Text fontSize="sm" fontWeight="700" color="gray.700">Location</Text>
+                                </Flex>
+                                <AccordionIcon />
+                            </AccordionButton>
+                        </h2>
+                        <AccordionPanel pb={2} pt={1} px={3}>
+                            <InputGroup size="sm">
+                                <InputLeftElement pointerEvents="none">
+                                    <MapPin size={14} color="#a0aec0" />
+                                </InputLeftElement>
+                                <Input
+                                    placeholder="e.g., San Francisco"
+                                    value={tempFilters.location || ''}
+                                    onChange={(e) => setTempFilters({ ...tempFilters, location: e.target.value })}
+                                    borderRadius="lg"
+                                    bg="gray.50"
+                                    border="1px solid"
+                                    borderColor="gray.200"
+                                    _focus={{ borderColor: 'brand.500', bg: 'white', boxShadow: 'none' }}
+                                    fontSize="xs"
+                                />
+                            </InputGroup>
+                        </AccordionPanel>
+                    </AccordionItem>
 
                     {/* Job Type */}
-                    <Box bg={sectionBg} p={4} borderRadius="lg" borderWidth="1px" borderColor={borderColor} shadow="sm" _hover={{ shadow: 'md' }}>
-                        <Text fontWeight="semibold" mb={2} fontSize="sm" color="gray.700">Job Type</Text>
-                        <Select
-                            placeholder="Select job type"
-                            value={tempFilters.jobType || ''}
-                            onChange={(e) => setTempFilters({ ...tempFilters, jobType: e.target.value })}
-                            size="sm"
-                            borderRadius="md"
-                        >
-                            {jobTypes.map((type) => (
-                                <option key={type} value={type}>{type}</option>
-                            ))}
-                        </Select>
-                    </Box>
+                    <AccordionItem border="none" mb={3}>
+                        <h2>
+                            <AccordionButton 
+                                px={3} 
+                                py={2} 
+                                borderRadius="xl" 
+                                _hover={{ bg: 'gray.50' }}
+                                display="flex"
+                                justifyContent="space-between"
+                            >
+                                <Flex align="center" gap={2}>
+                                    <Layers size={15} className="text-indigo-500" style={{ color: '#6366f1' }} />
+                                    <Text fontSize="sm" fontWeight="700" color="gray.700">Job Type</Text>
+                                </Flex>
+                                <AccordionIcon />
+                            </AccordionButton>
+                        </h2>
+                        <AccordionPanel pb={2} pt={1} px={3}>
+                            <Select
+                                placeholder="Select job type"
+                                value={tempFilters.jobType || ''}
+                                onChange={(e) => setTempFilters({ ...tempFilters, jobType: e.target.value })}
+                                size="sm"
+                                borderRadius="lg"
+                                bg="gray.50"
+                                border="1px solid"
+                                borderColor="gray.200"
+                                fontSize="xs"
+                                _focus={{ borderColor: 'brand.500', bg: 'white' }}
+                            >
+                                {jobTypes.map((type) => (
+                                    <option key={type} value={type}>{type}</option>
+                                ))}
+                            </Select>
+                        </AccordionPanel>
+                    </AccordionItem>
 
                     {/* Work Mode */}
-                    <Box bg={sectionBg} p={4} borderRadius="lg" borderWidth="1px" borderColor={borderColor} shadow="sm" _hover={{ shadow: 'md' }}>
-                        <Text fontWeight="semibold" mb={2} fontSize="sm" color="gray.700">Work Mode</Text>
-                        <Select
-                            placeholder="Select work mode"
-                            value={tempFilters.workMode || ''}
-                            onChange={(e) => setTempFilters({ ...tempFilters, workMode: e.target.value })}
-                            size="sm"
-                            borderRadius="md"
-                        >
-                            {workModes.map((mode) => (
-                                <option key={mode} value={mode}>{mode}</option>
-                            ))}
-                        </Select>
-                    </Box>
+                    <AccordionItem border="none" mb={3}>
+                        <h2>
+                            <AccordionButton 
+                                px={3} 
+                                py={2} 
+                                borderRadius="xl" 
+                                _hover={{ bg: 'gray.50' }}
+                                display="flex"
+                                justifyContent="space-between"
+                            >
+                                <Flex align="center" gap={2}>
+                                    <Clock size={15} className="text-indigo-500" style={{ color: '#6366f1' }} />
+                                    <Text fontSize="sm" fontWeight="700" color="gray.700">Work Mode</Text>
+                                </Flex>
+                                <AccordionIcon />
+                            </AccordionButton>
+                        </h2>
+                        <AccordionPanel pb={2} pt={1} px={3}>
+                            <Select
+                                placeholder="Select work mode"
+                                value={tempFilters.workMode || ''}
+                                onChange={(e) => setTempFilters({ ...tempFilters, workMode: e.target.value })}
+                                size="sm"
+                                borderRadius="lg"
+                                bg="gray.50"
+                                border="1px solid"
+                                borderColor="gray.200"
+                                fontSize="xs"
+                                _focus={{ borderColor: 'brand.500', bg: 'white' }}
+                            >
+                                {workModes.map((mode) => (
+                                    <option key={mode} value={mode}>{mode}</option>
+                                ))}
+                            </Select>
+                        </AccordionPanel>
+                    </AccordionItem>
 
                     {/* Date Posted */}
-                    <Box bg={sectionBg} p={4} borderRadius="lg" borderWidth="1px" borderColor={borderColor} shadow="sm" _hover={{ shadow: 'md' }}>
-                        <Text fontWeight="semibold" mb={2} fontSize="sm" color="gray.700">Date Posted</Text>
-                        <Select
-                            value={tempFilters.datePosted || 'any'}
-                            onChange={(e) => setTempFilters({ ...tempFilters, datePosted: e.target.value })}
-                            size="sm"
-                            borderRadius="md"
-                        >
-                            {dateOptions.map((option) => (
-                                <option key={option.value} value={option.value}>
-                                    {option.label}
-                                </option>
-                            ))}
-                        </Select>
-                    </Box>
+                    <AccordionItem border="none" mb={3}>
+                        <h2>
+                            <AccordionButton 
+                                px={3} 
+                                py={2} 
+                                borderRadius="xl" 
+                                _hover={{ bg: 'gray.50' }}
+                                display="flex"
+                                justifyContent="space-between"
+                            >
+                                <Flex align="center" gap={2}>
+                                    <Calendar size={15} className="text-indigo-500" style={{ color: '#6366f1' }} />
+                                    <Text fontSize="sm" fontWeight="700" color="gray.700">Date Posted</Text>
+                                </Flex>
+                                <AccordionIcon />
+                            </AccordionButton>
+                        </h2>
+                        <AccordionPanel pb={2} pt={1} px={3}>
+                            <Select
+                                value={tempFilters.datePosted || 'any'}
+                                onChange={(e) => setTempFilters({ ...tempFilters, datePosted: e.target.value })}
+                                size="sm"
+                                borderRadius="lg"
+                                bg="gray.50"
+                                border="1px solid"
+                                borderColor="gray.200"
+                                fontSize="xs"
+                                _focus={{ borderColor: 'brand.500', bg: 'white' }}
+                            >
+                                {dateOptions.map((option) => (
+                                    <option key={option.value} value={option.value}>
+                                        {option.label}
+                                    </option>
+                                ))}
+                            </Select>
+                        </AccordionPanel>
+                    </AccordionItem>
 
                     {/* Match Score */}
-                    <Box bg={sectionBg} p={4} borderRadius="lg" borderWidth="1px" borderColor={borderColor} shadow="sm" _hover={{ shadow: 'md' }}>
-                        <Text fontWeight="semibold" mb={2} fontSize="sm" color="gray.700">Match Score</Text>
-                        <Select
-                            value={tempFilters.matchScore || 'all'}
-                            onChange={(e) => setTempFilters({ ...tempFilters, matchScore: e.target.value })}
-                            size="sm"
-                            borderRadius="md"
-                        >
-                            {matchScoreOptions.map((option) => (
-                                <option key={option.value} value={option.value}>
-                                    {option.label}
-                                </option>
-                            ))}
-                        </Select>
-                    </Box>
+                    <AccordionItem border="none" mb={4}>
+                        <h2>
+                            <AccordionButton 
+                                px={3} 
+                                py={2} 
+                                borderRadius="xl" 
+                                _hover={{ bg: 'gray.50' }}
+                                display="flex"
+                                justifyContent="space-between"
+                            >
+                                <Flex align="center" gap={2}>
+                                    <Award size={15} className="text-indigo-500" style={{ color: '#6366f1' }} />
+                                    <Text fontSize="sm" fontWeight="700" color="gray.700">Match Score</Text>
+                                </Flex>
+                                <AccordionIcon />
+                            </AccordionButton>
+                        </h2>
+                        <AccordionPanel pb={2} pt={1} px={3}>
+                            <Select
+                                value={tempFilters.matchScore || 'all'}
+                                onChange={(e) => setTempFilters({ ...tempFilters, matchScore: e.target.value })}
+                                size="sm"
+                                borderRadius="lg"
+                                bg="gray.50"
+                                border="1px solid"
+                                borderColor="gray.200"
+                                fontSize="xs"
+                                _focus={{ borderColor: 'brand.500', bg: 'white' }}
+                            >
+                                {matchScoreOptions.map((option) => (
+                                    <option key={option.value} value={option.value}>
+                                        {option.label}
+                                    </option>
+                                ))}
+                            </Select>
+                        </AccordionPanel>
+                    </AccordionItem>
+                </Accordion>
 
-                    {/* Action Buttons */}
-                    <VStack spacing={2} pt={3}>
-                        <Button
-                            w="full"
-                            onClick={handleApplyFilters}
-                            size="sm"
-                            borderRadius="lg"
-                            bgGradient={accentGradient}
-                            color="white"
-                            _hover={{ transform: 'translateY(-1px)', shadow: 'md', bgGradient: 'linear(to-r, #4c7be0, #6a4fd8)' }}
-                        >
-                            Apply Filters
-                        </Button>
-                        <Button
-                            variant="outline"
-                            w="full"
-                            onClick={handleResetFilters}
-                            size="sm"
-                            borderRadius="lg"
-                        >
-                            Clear All Filters
-                        </Button>
-                    </VStack>
+                {/* Filter Action Buttons */}
+                <VStack spacing={2} pt={3} borderTop="1px solid" borderColor={borderColor}>
+                    <Button
+                        w="full"
+                        onClick={handleApplyFilters}
+                        size="sm"
+                        borderRadius="xl"
+                        bgGradient={accentGradient}
+                        color="white"
+                        fontWeight="bold"
+                        _hover={{ 
+                            transform: 'translateY(-1px)', 
+                            shadow: '0 4px 12px rgba(99, 102, 241, 0.2)',
+                            bgGradient: 'linear(to-r, #4f46e5, #4338ca)' 
+                        }}
+                    >
+                        Apply Filters
+                    </Button>
+                    <Button
+                        variant="outline"
+                        w="full"
+                        onClick={handleResetFilters}
+                        size="sm"
+                        borderRadius="xl"
+                        fontSize="xs"
+                        fontWeight="semibold"
+                        color="gray.600"
+                        borderColor="gray.200"
+                        _hover={{ bg: 'gray.50' }}
+                    >
+                        Clear All
+                    </Button>
                 </VStack>
             </Box>
         </>

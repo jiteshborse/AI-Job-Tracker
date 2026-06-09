@@ -1,11 +1,44 @@
-const { OpenAI } = require('openai');
+const axios = require('axios');
+const FileParser = require('../utils/fileParser');
 require('dotenv').config();
 
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY
-});
-
 class AIService {
+    constructor() {
+        this.apiKey = process.env.GEMINI_API_KEY;
+        this.model = 'gemini-1.5-flash';
+    }
+
+    async callGemini(prompt, temperature = 0.7, maxTokens = 200) {
+        if (!this.apiKey || this.apiKey.length < 10) {
+            throw new Error('Gemini API key not configured');
+        }
+
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent?key=${this.apiKey}`;
+        
+        const response = await axios.post(url, {
+            contents: [{
+                parts: [{
+                    text: prompt
+                }]
+            }],
+            generationConfig: {
+                temperature: temperature,
+                maxOutputTokens: maxTokens
+            }
+        }, {
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            timeout: 15000
+        });
+
+        const text = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!text) {
+            throw new Error('Invalid response format from Gemini API');
+        }
+        return text.trim();
+    }
+
     // Calculate match score between resume and job
     async calculateMatchScore(resumeText, jobDescription, jobSkills = []) {
         try {
@@ -19,7 +52,7 @@ class AIService {
             // Use fallback first as primary method - it's more reliable
             const fallbackScore = this.fallbackMatchScore(resumeString, jobSkills);
             
-            // Try OpenAI for additional context-aware scoring
+            // Try Gemini for additional context-aware scoring
             try {
                 const prompt = `
         Calculate a match percentage (0-100) between this resume and job description.
@@ -42,19 +75,18 @@ class AIService {
         Return ONLY a number between 0-100. No explanations.
       `;
 
-                const response = await openai.chat.completions.create({
-                    model: "gpt-3.5-turbo",
-                    messages: [{ role: "user", content: prompt }],
-                    temperature: 0.1,
-                    max_tokens: 10
-                });
+                const aiResponseText = await this.callGemini(prompt, 0.1, 10);
+                const aiScore = parseInt(aiResponseText);
+                
+                if (isNaN(aiScore)) {
+                    throw new Error('Gemini response is not a number: ' + aiResponseText);
+                }
 
-                const aiScore = parseInt(response.choices[0].message.content.trim());
                 // Average the scores for better accuracy
                 return Math.round((fallbackScore + Math.min(Math.max(aiScore, 0), 100)) / 2);
             } catch (aiError) {
-                // If OpenAI fails, just use fallback
-                console.log('OpenAI unavailable, using fallback scoring');
+                // If Gemini fails, just use fallback
+                console.log('Gemini unavailable, using fallback scoring:', aiError.message);
                 return fallbackScore;
             }
         } catch (error) {
@@ -169,20 +201,9 @@ class AIService {
     `;
 
         try {
-            if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY.length < 20) {
-                throw new Error('OpenAI API key not configured');
-            }
-
-            const response = await openai.chat.completions.create({
-                model: "gpt-3.5-turbo",
-                messages: [{ role: "user", content: contextPrompt }],
-                temperature: 0.7,
-                max_tokens: 200
-            });
-
-            return response.choices[0].message.content;
+            return await this.callGemini(contextPrompt, 0.7, 200);
         } catch (error) {
-            console.error('OpenAI Error:', error.message);
+            console.error('Gemini Error:', error.message);
             // Return intelligent fallback based on query
             return this.generateFallbackResponse(query, context);
         }
@@ -216,6 +237,54 @@ class AIService {
 
         // Generic helpful fallback
         return "💡 I'm here to help! You can ask me about:\n\n• Uploading your resume\n• How match scores work\n• Using filters to find jobs\n• Tracking your applications\n• Getting started with the app\n\nWhat would you like to know more about?";
+    }
+
+    // AI-based Resume Parsing
+    async extractResumeInfo(resumeText) {
+        try {
+            const prompt = `
+        You are an expert resume parser. Extract structured information from the following resume text.
+        
+        RESUME TEXT:
+        ${resumeText.substring(0, 8000)}
+        
+        Extract the following fields and return them strictly in JSON format (no markdown code blocks, no explanation, just raw JSON):
+        {
+            "primaryRole": "The most appropriate job title for the candidate (e.g. Frontend Engineer, Full Stack Developer, Data Scientist, Sales Manager)",
+            "skills": ["List of all professional tech/soft skills found"],
+            "experience": ["Brief summary of past jobs/projects"],
+            "education": ["Degrees and schools"],
+            "contact": {
+                "email": "extracted email address",
+                "phone": "extracted phone number",
+                "linkedin": "linkedin URL"
+            },
+            "experienceYears": 5, // Estimated total years of experience as a number
+            "summary": "A short professional summary (max 200 words)"
+        }
+        `;
+
+            const aiResponseText = await this.callGemini(prompt, 0.1, 800);
+            
+            // Clean markdown code blocks from response if present
+            let jsonString = aiResponseText;
+            if (jsonString.startsWith('```json')) {
+                jsonString = jsonString.substring(7);
+            } else if (jsonString.startsWith('```')) {
+                jsonString = jsonString.substring(3);
+            }
+            if (jsonString.endsWith('```')) {
+                jsonString = jsonString.substring(0, jsonString.length - 3);
+            }
+            jsonString = jsonString.trim();
+
+            const parsed = JSON.parse(jsonString);
+            return parsed;
+        } catch (error) {
+            console.error('Gemini Resume Parsing Error:', error.message);
+            // Fallback to local heuristic parser
+            return FileParser.extractResumeInfo(resumeText);
+        }
     }
 }
 

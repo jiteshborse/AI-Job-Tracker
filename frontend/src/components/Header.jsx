@@ -10,10 +10,10 @@ import {
     MenuList,
     MenuItem,
     Badge,
-    useColorModeValue,
     Box,
     useBreakpointValue,
-    HStack
+    HStack,
+    Avatar
 } from '@chakra-ui/react';
 import {
     Briefcase,
@@ -27,11 +27,13 @@ import { useApp } from '../context/AppContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 const Header = () => {
-    const { userResume, applications, setShowResumeUpload, logout } = useApp();
+    const { user, userResume, applications, setShowResumeUpload, logout } = useApp();
     const navigate = useNavigate();
     const location = useLocation();
-    const bgColor = useColorModeValue('white', 'gray.800');
-    const borderColor = useColorModeValue('gray.200', 'gray.700');
+    
+    // Modern premium glassmorphism styling
+    const bgColor = 'rgba(255, 255, 255, 0.75)';
+    const borderColor = 'rgba(226, 232, 240, 0.8)';
 
     const showFullNav = useBreakpointValue({ base: false, sm: true });
 
@@ -43,235 +45,263 @@ const Header = () => {
                 top="0"
                 zIndex="1000"
                 bg={bgColor}
-                borderBottom="2px"
+                backdropFilter="blur(16px)"
+                borderBottom="1px solid"
                 borderColor={borderColor}
-                boxShadow="md"
-                transition="all 0.3s ease"
+                boxShadow="0 4px 30px rgba(0, 0, 0, 0.03)"
+                transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
             >
                 <Flex
                     h={{ base: '14', md: '16' }}
                     alignItems="center"
                     justifyContent="space-between"
-                    px={{ base: 3, md: 6 }}
+                    px={{ base: 4, md: 6 }}
                     maxW="100vw"
-                    overflowX="auto"
                 >
                     {/* Logo Section */}
                     <Flex alignItems="center" gap={{ base: 2, md: 4 }}>
-                        <IconButton
-                            display={{ base: 'flex', md: 'none' }}
-                            icon={<MenuIcon size={20} />}
-                            variant="ghost"
-                            aria-label="Menu"
-                            borderRadius="lg"
-                            _hover={{ bg: useColorModeValue('gray.100', 'gray.700') }}
-                        />
-                        <Flex alignItems="center" gap={2}>
-                            <Briefcase size={24} color="#667eea" />
+                        <Flex alignItems="center" gap={2.5} cursor="pointer" onClick={() => navigate('/')}>
+                            <Box 
+                                p={2} 
+                                bg="linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)" 
+                                borderRadius="xl"
+                                color="white"
+                                shadow="0 4px 12px rgba(99, 102, 241, 0.25)"
+                            >
+                                <Briefcase size={20} />
+                            </Box>
                             <Heading
-                                size={{ base: 'sm', md: 'lg' }}
-                                bgGradient="linear(to-r, #667eea, #764ba2)"
+                                size={{ base: 'sm', md: 'md' }}
+                                bgGradient="linear(to-r, #6366f1, #4f46e5)"
                                 bgClip="text"
-                                fontWeight="bold"
+                                fontWeight="800"
                                 whiteSpace="nowrap"
+                                letterSpacing="-0.5px"
+                                fontFamily="'Plus Jakarta Sans', sans-serif"
                             >
                                 AI Job Tracker
                             </Heading>
                         </Flex>
                     </Flex>
 
-                    {/* Center Navigation & Actions */}
-                    <Flex
-                        alignItems="center"
-                        gap={{ base: 2, md: 4 }}
-                        flexWrap="nowrap"
-                        justifyContent="flex-end"
-                        flex={{ base: 1, md: 'auto' }}
-                        ml={{ base: 2, md: 0 }}
-                    >
-                        {/* Navigation - Hidden on mobile */}
-                        {showFullNav && (
-                            <HStack spacing={2} display={{ base: 'none', sm: 'flex' }}>
-                                <Button
-                                    variant={location.pathname === '/' ? 'solid' : 'ghost'}
-                                    colorScheme={location.pathname === '/' ? 'blue' : 'gray'}
-                                    onClick={() => navigate('/')}
-                                    leftIcon={<Briefcase size={16} />}
-                                    size="sm"
-                                    borderRadius="lg"
-                                    fontWeight="medium"
-                                    transition="all 0.2s ease"
-                                    _hover={{ transform: 'translateY(-2px)', shadow: 'md' }}
-                                >
-                                    Job Feed
-                                </Button>
-                                <Button
-                                    variant={location.pathname === '/applications' ? 'solid' : 'ghost'}
-                                    colorScheme={location.pathname === '/applications' ? 'blue' : 'gray'}
-                                    onClick={() => navigate('/applications')}
-                                    leftIcon={<Bell size={16} />}
-                                    position="relative"
-                                    size="sm"
-                                    borderRadius="lg"
-                                    fontWeight="medium"
-                                    transition="all 0.2s ease"
-                                    _hover={{ transform: 'translateY(-2px)', shadow: 'md' }}
-                                >
-                                    Applications
-                                    {applications.length > 0 && (
-                                        <Badge
-                                            colorScheme="red"
-                                            borderRadius="full"
-                                            position="absolute"
-                                            top="-2"
-                                            right="-2"
-                                            fontSize="2xs"
-                                            minW="5"
-                                            h="5"
-                                            display="flex"
-                                            alignItems="center"
-                                            justifyContent="center"
-                                        >
-                                            {applications.length}
-                                        </Badge>
-                                    )}
-                                </Button>
-                            </HStack>
-                        )}
-
-                        {/* Resume Button */}
-                        <Button
-                            variant={userResume ? 'outline' : 'solid'}
-                            colorScheme={userResume ? 'green' : 'orange'}
-                            leftIcon={<Upload size={16} />}
-                            onClick={() => setShowResumeUpload(true)}
-                            size="sm"
-                            borderRadius="lg"
-                            fontWeight="bold"
-                            transition="all 0.2s ease"
-                            _hover={{
-                                transform: 'translateY(-2px)',
-                                shadow: 'lg',
-                                bg: userResume ? undefined : 'orange.600'
-                            }}
-                            bg={userResume ? undefined : 'linear-gradient(135deg, #f6ad55 0%, #ed8936 100%)'}
-                            whiteSpace="nowrap"
+                    {/* Actions and Profile - Only visible if logged in */}
+                    {user && (
+                        <Flex
+                            alignItems="center"
+                            gap={{ base: 3, md: 4 }}
+                            flexWrap="nowrap"
+                            justifyContent="flex-end"
+                            flex={{ base: 1, md: 'auto' }}
                         >
-                            <Text display={{ base: 'none', sm: 'inline' }}>
-                                {userResume ? 'Resume ✓' : 'Upload Resume'}
-                            </Text>
-                            <Text display={{ base: 'inline', sm: 'none' }}>
-                                {userResume ? '✓' : 'Upload'}
-                            </Text>
-                        </Button>
+                            {/* Navigation - Hidden on mobile */}
+                            {showFullNav && (
+                                <HStack spacing={2} mr={2}>
+                                    <Button
+                                        variant={location.pathname === '/' ? 'solid' : 'ghost'}
+                                        bg={location.pathname === '/' ? 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)' : 'transparent'}
+                                        color={location.pathname === '/' ? 'white' : 'gray.600'}
+                                        _hover={{
+                                            bg: location.pathname === '/' ? 'linear-gradient(135deg, #4f46e5 0%, #4338ca 100%)' : 'rgba(99, 102, 241, 0.08)',
+                                            color: location.pathname === '/' ? 'white' : 'brand.600',
+                                        }}
+                                        onClick={() => navigate('/')}
+                                        leftIcon={<Briefcase size={16} />}
+                                        size="sm"
+                                        borderRadius="xl"
+                                        fontWeight="700"
+                                        px={4}
+                                        py={2}
+                                        transition="all 0.2s ease"
+                                    >
+                                        Job Feed
+                                    </Button>
+                                    <Button
+                                        variant={location.pathname === '/applications' ? 'solid' : 'ghost'}
+                                        bg={location.pathname === '/applications' ? 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)' : 'transparent'}
+                                        color={location.pathname === '/applications' ? 'white' : 'gray.600'}
+                                        _hover={{
+                                            bg: location.pathname === '/applications' ? 'linear-gradient(135deg, #4f46e5 0%, #4338ca 100%)' : 'rgba(99, 102, 241, 0.08)',
+                                            color: location.pathname === '/applications' ? 'white' : 'brand.600',
+                                        }}
+                                        onClick={() => navigate('/applications')}
+                                        leftIcon={<Bell size={16} />}
+                                        position="relative"
+                                        size="sm"
+                                        borderRadius="xl"
+                                        fontWeight="700"
+                                        px={4}
+                                        py={2}
+                                        transition="all 0.2s ease"
+                                    >
+                                        Applications
+                                        {applications.length > 0 && (
+                                            <Badge
+                                                bg="linear-gradient(135deg, #ef4444 0%, #dc2626 100%)"
+                                                color="white"
+                                                borderRadius="full"
+                                                position="absolute"
+                                                top="-1.5"
+                                                right="-1.5"
+                                                fontSize="10px"
+                                                minW="4.5"
+                                                h="4.5"
+                                                display="flex"
+                                                alignItems="center"
+                                                justifyContent="center"
+                                                border="2px solid white"
+                                            >
+                                                {applications.length}
+                                            </Badge>
+                                        )}
+                                    </Button>
+                                </HStack>
+                            )}
 
-                        {/* User Menu */}
-                        <Menu>
-                            <MenuButton
-                                as={IconButton}
-                                icon={<User size={20} />}
-                                variant="ghost"
-                                borderRadius="lg"
+                            {/* Resume Button */}
+                            <Button
+                                variant="solid"
+                                bg={userResume ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' : 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)'}
+                                color="white"
+                                _hover={{
+                                    bg: userResume ? 'linear-gradient(135deg, #059669 0%, #047857 100%)' : 'linear-gradient(135deg, #4f46e5 0%, #4338ca 100%)',
+                                    transform: 'translateY(-1px)',
+                                    boxShadow: userResume ? '0 4px 12px rgba(16, 185, 129, 0.2)' : '0 4px 12px rgba(99, 102, 241, 0.2)'
+                                }}
+                                leftIcon={<Upload size={16} />}
+                                onClick={() => setShowResumeUpload(true)}
                                 size="sm"
-                                _hover={{ bg: useColorModeValue('gray.100', 'gray.700') }}
+                                borderRadius="xl"
+                                fontWeight="bold"
                                 transition="all 0.2s ease"
-                            />
-                            <MenuList borderRadius="lg" shadow="xl" minW="200px">
-                                <MenuItem
-                                    icon={<User size={16} />}
-                                    _hover={{ bg: useColorModeValue('gray.100', 'gray.700') }}
+                                shadow="sm"
+                            >
+                                <Text display={{ base: 'none', sm: 'inline' }}>
+                                    {userResume ? 'Resume Parsed' : 'Upload Resume'}
+                                </Text>
+                                <Text display={{ base: 'inline', sm: 'none' }}>
+                                    {userResume ? '✓' : 'Upload'}
+                                </Text>
+                            </Button>
+
+                            {/* User Menu */}
+                            <Menu>
+                                <MenuButton
+                                    as={Button}
+                                    variant="ghost"
+                                    borderRadius="full"
+                                    size="sm"
+                                    p={1}
+                                    _hover={{ bg: 'rgba(99, 102, 241, 0.05)' }}
                                 >
-                                    <Text fontWeight="bold">Demo User</Text>
-                                </MenuItem>
-                                <MenuItem
-                                    icon={<Upload size={16} />}
-                                    onClick={() => setShowResumeUpload(true)}
-                                    _hover={{ bg: useColorModeValue('gray.100', 'gray.700') }}
+                                    <Flex align="center" gap={2} pr={1}>
+                                        <Avatar 
+                                            size="sm" 
+                                            name={user.name} 
+                                            bg="linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)" 
+                                            color="white" 
+                                            fontWeight="bold" 
+                                        />
+                                        <Text display={{ base: 'none', md: 'inline' }} maxW="120px" fontSize="sm" fontWeight="700" color="gray.700" isTruncated>
+                                            {user.name}
+                                        </Text>
+                                    </Flex>
+                                </MenuButton>
+                                <MenuList 
+                                    borderRadius="xl" 
+                                    shadow="xl" 
+                                    border="1px solid" 
+                                    borderColor="gray.100" 
+                                    minW="220px" 
+                                    py={1}
+                                    className="scale-in"
                                 >
-                                    {userResume ? 'Update Resume' : 'Upload Resume'}
-                                </MenuItem>
-                                <MenuItem
-                                    icon={<LogOut size={16} />}
-                                    color="red.500"
-                                    _hover={{ bg: 'red.50' }}
-                                    onClick={() => {
-                                        logout();
-                                        navigate('/');
-                                    }}
-                                >
-                                    Logout
-                                </MenuItem>
-                            </MenuList>
-                        </Menu>
-                    </Flex>
+                                    <Box px={4} py={3} borderBottom="1px solid" borderColor="gray.50">
+                                        <Text fontSize="xs" color="gray.400" fontWeight="bold" textTransform="uppercase" letterSpacing="0.5px">Signed in as</Text>
+                                        <Text fontSize="sm" fontWeight="bold" color="gray.800" isTruncated>{user.email}</Text>
+                                    </Box>
+                                    <MenuItem
+                                        icon={<Upload size={14} />}
+                                        onClick={() => setShowResumeUpload(true)}
+                                        fontSize="sm"
+                                        py={2.5}
+                                        fontWeight="500"
+                                        color="gray.700"
+                                    >
+                                        {userResume ? 'Update Resume' : 'Upload Resume'}
+                                    </MenuItem>
+                                    <MenuItem
+                                        icon={<LogOut size={14} />}
+                                        color="red.500"
+                                        _hover={{ bg: 'red.50' }}
+                                        onClick={() => {
+                                            logout();
+                                            navigate('/');
+                                        }}
+                                        fontSize="sm"
+                                        py={2.5}
+                                        fontWeight="500"
+                                    >
+                                        Logout
+                                    </MenuItem>
+                                </MenuList>
+                            </Menu>
+                        </Flex>
+                    )}
                 </Flex>
             </Box>
 
-            {/* Mobile Navigation (only for small screens) */}
-            {!showFullNav && location.pathname === '/' && (
+            {/* Mobile Navigation (only for small screens and when logged in) */}
+            {user && !showFullNav && (
                 <Box
                     display={{ base: 'flex', sm: 'none' }}
                     justifyContent="space-around"
-                    py={2}
+                    py={2.5}
                     px={4}
-                    borderBottom="1px"
-                    borderColor={borderColor}
-                    bg={bgColor}
+                    borderBottom="1px solid"
+                    borderColor="gray.100"
+                    bg="rgba(255, 255, 255, 0.9)"
+                    backdropFilter="blur(10px)"
+                    shadow="sm"
                 >
                     <Button
-                        variant="ghost"
-                        size="xs"
+                        variant={location.pathname === '/' ? 'solid' : 'ghost'}
+                        size="sm"
+                        borderRadius="xl"
+                        bg={location.pathname === '/' ? 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)' : 'transparent'}
+                        color={location.pathname === '/' ? 'white' : 'gray.600'}
                         onClick={() => navigate('/')}
-                        colorScheme={location.pathname === '/' ? 'blue' : 'gray'}
+                        leftIcon={<Briefcase size={14} />}
+                        px={4}
                     >
-                        <Briefcase size={14} />
-                        <Text ml={1} fontSize="xs">Jobs</Text>
+                        <Text fontSize="xs" fontWeight="bold">Jobs</Text>
                     </Button>
                     <Button
-                        variant="ghost"
-                        size="xs"
+                        variant={location.pathname === '/applications' ? 'solid' : 'ghost'}
+                        size="sm"
+                        borderRadius="xl"
+                        bg={location.pathname === '/applications' ? 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)' : 'transparent'}
+                        color={location.pathname === '/applications' ? 'white' : 'gray.600'}
                         onClick={() => navigate('/applications')}
-                        colorScheme={location.pathname === '/applications' ? 'blue' : 'gray'}
+                        leftIcon={<Bell size={14} />}
+                        px={4}
+                        position="relative"
                     >
-                        <Bell size={14} />
-                        <Text ml={1} fontSize="xs">Apps</Text>
+                        <Text fontSize="xs" fontWeight="bold">Apps</Text>
                         {applications.length > 0 && (
-                            <Badge colorScheme="red" ml={1} fontSize="2xs">
+                            <Badge 
+                                bg="linear-gradient(135deg, #ef4444 0%, #dc2626 100%)" 
+                                color="white"
+                                ml={1} 
+                                fontSize="9px" 
+                                borderRadius="full"
+                                border="1px solid white"
+                            >
                                 {applications.length}
                             </Badge>
                         )}
                     </Button>
                 </Box>
             )}
-
-            {/* Mobile Stats Bar (simplified) */}
-            {/* {applications.length > 0 && location.pathname === '/' && !showStatsBar && (
-                <Box
-                    display={{ base: 'flex', lg: 'none' }}
-                    justifyContent="space-around"
-                    alignItems="center"
-                    py={1}
-                    px={2}
-                    bg={useColorModeValue('blue.50', 'blue.900')}
-                    borderBottom="1px"
-                    borderColor={borderColor}
-                >
-                    <Flex alignItems="center" gap={1}>
-                        <Badge colorScheme="blue" fontSize="2xs">
-                            A: {applicationStats.Applied || 0}
-                        </Badge>
-                        <Badge colorScheme="yellow" fontSize="2xs" ml={1}>
-                            I: {applicationStats.Interview || 0}
-                        </Badge>
-                        <Badge colorScheme="green" fontSize="2xs" ml={1}>
-                            O: {applicationStats.Offer || 0}
-                        </Badge>
-                        <Badge colorScheme="red" fontSize="2xs" ml={1}>
-                            R: {applicationStats.Rejected || 0}
-                        </Badge>
-                    </Flex>
-                </Box>
-            )} */}
         </>
     );
 };

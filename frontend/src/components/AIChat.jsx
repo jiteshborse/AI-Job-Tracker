@@ -4,13 +4,11 @@ import {
   Flex,
   Heading,
   Text,
-  Input,
   Button,
   VStack,
   HStack,
   Avatar,
   IconButton,
-  useColorModeValue,
   Badge,
   CloseButton,
   Fade,
@@ -18,20 +16,9 @@ import {
   Textarea,
   useToast,
   Spinner,
-  Divider,
   InputGroup,
-  InputRightElement,
   Tooltip,
   useDisclosure,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalCloseButton,
-  Code,
-  OrderedList,
-  ListItem,
   Kbd
 } from '@chakra-ui/react';
 import { 
@@ -39,14 +26,12 @@ import {
   Send, 
   Bot, 
   User,
-  X,
   Sparkles,
   Search,
   HelpCircle,
   Zap,
   Copy,
   CheckCircle2,
-  AlertCircle,
   TrendingUp,
   Lightbulb,
   MessageCircle
@@ -55,7 +40,7 @@ import { useApp } from '../context/AppContext';
 import { aiApi } from '../services/api';
 
 const AIChat = () => {
-  const { filters, userResume, applications } = useApp();
+  const { filters, userResume, applications, user } = useApp();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
     {
@@ -71,16 +56,14 @@ const AIChat = () => {
   const [streamingText, setStreamingText] = useState('');
   const [copied, setCopied] = useState(null);
   const toast = useToast();
-  const { isOpen: showHelp, onOpen: openHelp, onClose: closeHelp } = useDisclosure();
   
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   
-  const chatBg = useColorModeValue('white', 'gray.800');
-  const borderColor = useColorModeValue('gray.200', 'gray.700');
-  const botBg = useColorModeValue('blue.50', 'blue.900');
-  const userBg = useColorModeValue('green.50', 'green.900');
-  const codeBlockBg = useColorModeValue('gray.900', 'gray.950');
+  const chatBg = 'rgba(255, 255, 255, 0.9)';
+  const borderColor = 'rgba(226, 232, 240, 0.8)';
+  const botBg = '#ede9fe'; // premium violet-50/100 tint
+  const userBg = '#eff6ff'; // premium slate/blue-50 tint
   
   // Auto-scroll to bottom
   useEffect(() => {
@@ -158,7 +141,7 @@ const AIChat = () => {
               : msg
           )
         );
-        await new Promise(resolve => setTimeout(resolve, 10)); // 10ms delay per character
+        await new Promise(resolve => setTimeout(resolve, 8)); // 8ms delay per character for snappy speed
       }
       
       // Mark as finished streaming
@@ -231,26 +214,6 @@ const AIChat = () => {
     setTimeout(() => setCopied(null), 2000);
   };
   
-  const renderMessageContent = (text) => {
-    // Parse markdown-like formatting
-    const parts = [];
-    const lines = text.split('\n');
-    
-    lines.forEach((line, i) => {
-      if (line.startsWith('• ')) {
-        parts.push(<Text key={i} pl={4} py={1}>• {line.slice(2)}</Text>);
-      } else if (line.startsWith('** ') && line.endsWith('**')) {
-        parts.push(<Text key={i} fontWeight="bold" py={1}>{line.slice(3, -2)}</Text>);
-      } else if (line === '') {
-        parts.push(<Box key={i} h={2} />);
-      } else {
-        parts.push(<Text key={i} py={0.5}>{line}</Text>);
-      }
-    });
-    
-    return parts.length > 0 ? parts : text;
-  };
-  
   const handleKeyPress = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -284,22 +247,33 @@ const AIChat = () => {
         <Box position="fixed" bottom="6" right="6" zIndex="2000">
           <ScaleFade in={!isOpen}>
             <Button
-              leftIcon={<MessageSquare size={20} />}
-              colorScheme="blue"
+              leftIcon={<Sparkles size={18} />}
+              bg="linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)"
+              color="white"
               size="lg"
               onClick={() => setIsOpen(true)}
-              shadow="lg"
+              shadow="0 8px 25px rgba(99, 102, 241, 0.35)"
               borderRadius="full"
               px={6}
-              bg="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
               _hover={{
-                transform: 'scale(1.05)',
-                shadow: 'xl'
+                transform: 'translateY(-3px) scale(1.03)',
+                shadow: '0 12px 30px rgba(99, 102, 241, 0.45)'
               }}
               _active={{
                 transform: 'scale(0.98)'
               }}
+              position="relative"
             >
+              <Box 
+                position="absolute"
+                top="-1.5px"
+                right="-1.5px"
+                w="12px"
+                h="12px"
+                bg="green.400"
+                borderRadius="full"
+                border="2px solid white"
+              />
               AI Assistant
             </Button>
           </ScaleFade>
@@ -313,110 +287,123 @@ const AIChat = () => {
             position="fixed"
             bottom="6"
             right="6"
-            width={{ base: 'calc(100vw - 48px)', md: '400px' }}
-            height="600px"
+            width={{ base: 'calc(100vw - 48px)', md: '420px' }}
+            height="620px"
             maxHeight="calc(100vh - 120px)"
             bg={chatBg}
-            borderRadius="lg"
-            border="1px"
+            backdropFilter="blur(16px)"
+            borderRadius="2xl"
+            border="1px solid"
             borderColor={borderColor}
-            shadow="2xl"
+            shadow="0 15px 40px rgba(0, 0, 0, 0.08)"
             display="flex"
             flexDirection="column"
             zIndex="2001"
             overflow="hidden"
             isolation="isolate"
+            className="scale-in"
           >
           {/* Chat Header */}
           <Flex 
             p={4} 
-            borderBottom="1px" 
-            borderColor={borderColor}
             alignItems="center"
             justifyContent="space-between"
-            bg="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+            bg="linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)"
             color="white"
+            shadow="sm"
           >
             <Flex alignItems="center" gap={3}>
               <Avatar 
                 size="sm" 
-                icon={<Bot size={20} />}
+                icon={<Bot size={18} />}
                 bg="white"
-                color="#667eea"
+                color="#6366f1"
+                shadow="sm"
               />
               <Box>
-                <Heading size="sm">AI Job Assistant</Heading>
-                <Text fontSize="xs" opacity={0.8}>
-                  Powered by GPT
+                <Heading size="xs" fontWeight="800" fontFamily="'Plus Jakarta Sans', sans-serif">AI Job Assistant</Heading>
+                <Text fontSize="10px" opacity={0.8}>
+                  Powered by Gemini LLM
                 </Text>
               </Box>
-              <Badge colorScheme="green" fontSize="xs">
-                Live
+              <Badge bg="whiteAlpha.300" color="white" fontSize="9px" borderRadius="full" px={2} py={0.5}>
+                Online
               </Badge>
             </Flex>
             
-            <HStack>
+            <HStack spacing={1}>
               <IconButton
-                icon={<Zap size={18} />}
-                size="sm"
+                icon={<Zap size={15} />}
+                size="xs"
                 variant="ghost"
                 color="white"
                 onClick={clearChat}
                 aria-label="Clear chat"
-                _hover={{ bg: 'rgba(255,255,255,0.2)' }}
+                _hover={{ bg: 'whiteAlpha.200' }}
+                borderRadius="lg"
               />
               <CloseButton 
                 size="sm" 
                 onClick={() => setIsOpen(false)}
                 color="white"
-                _hover={{ bg: 'rgba(255,255,255,0.2)' }}
+                _hover={{ bg: 'whiteAlpha.200' }}
+                borderRadius="full"
               />
             </HStack>
           </Flex>
           
           {/* Messages Container */}
-          <Box flex="1" overflowY="auto" p={4}>
+          <Box flex="1" overflowY="auto" p={4} css={{
+              '&::-webkit-scrollbar': { width: '4px' },
+              '&::-webkit-scrollbar-thumb': { background: '#cbd5e1', borderRadius: '4px' }
+          }}>
             <VStack spacing={4} align="stretch">
               {messages.map((msg) => (
                 <Flex
                   key={msg.id}
                   direction={msg.sender === 'user' ? 'row-reverse' : 'row'}
-                  gap={3}
-                  maxWidth="85%"
+                  gap={2.5}
+                  maxWidth="90%"
                   alignSelf={msg.sender === 'user' ? 'flex-end' : 'flex-start'}
                 >
                   <Avatar
-                    size="sm"
-                    icon={msg.sender === 'user' ? <User size={14} /> : <Bot size={14} />}
-                    bg={msg.sender === 'user' ? 'green.500' : 'blue.500'}
+                    size="xs"
+                    name={msg.sender === 'user' ? user?.name : undefined}
+                    icon={msg.sender !== 'user' ? <Bot size={12} /> : undefined}
+                    bg={msg.sender === 'user' ? 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)' : 'transparent'}
                     color="white"
+                    border={msg.sender !== 'user' ? '1px solid' : 'none'}
+                    borderColor={msg.sender !== 'user' ? 'gray.200' : 'transparent'}
                   />
                   <Box
                     bg={msg.sender === 'user' ? userBg : botBg}
-                    p={3}
-                    borderRadius="lg"
-                    borderTopLeftRadius={msg.sender === 'user' ? 'lg' : '0'}
-                    borderTopRightRadius={msg.sender === 'user' ? '0' : 'lg'}
+                    p={3.5}
+                    borderRadius="2xl"
+                    borderTopLeftRadius={msg.sender === 'user' ? '2xl' : '4px'}
+                    borderTopRightRadius={msg.sender === 'user' ? '4px' : '2xl'}
                     maxWidth="100%"
                     position="relative"
+                    shadow="sm"
                   >
-                    <VStack align="start" spacing={1}>
+                    <VStack align="start" spacing={1.5}>
                       <Text 
                         whiteSpace="pre-wrap" 
                         wordBreak="break-word"
-                        fontSize="sm"
-                        lineHeight="1.5"
+                        fontSize="xs"
+                        lineHeight="1.6"
+                        color="gray.800"
+                        fontWeight="500"
                       >
                         {msg.text}
                       </Text>
                       {msg.sender === 'bot' && msg.isStreaming && (
-                        <Spinner size="xs" color="blue.500" />
+                        <Spinner size="xs" color="brand.500" thickness="2px" />
                       )}
                     </VStack>
                     
                     {/* Message footer */}
-                    <HStack spacing={2} mt={2} justify="space-between">
-                      <Text fontSize="xs" color={msg.sender === 'user' ? 'gray.600' : 'gray.500'}>
+                    <Flex justify="space-between" align="center" mt={2} gap={4}>
+                      <Text fontSize="9px" color="gray.400" fontWeight="bold">
                         {new Date(msg.timestamp).toLocaleTimeString([], { 
                           hour: '2-digit', 
                           minute: '2-digit' 
@@ -426,37 +413,43 @@ const AIChat = () => {
                         <Tooltip label={copied === msg.id ? 'Copied!' : 'Copy response'}>
                           <IconButton
                             size="xs"
-                            icon={copied === msg.id ? <CheckCircle2 size={14} /> : <Copy size={14} />}
+                            icon={copied === msg.id ? <CheckCircle2 size={12} /> : <Copy size={12} />}
                             variant="ghost"
                             onClick={() => copyToClipboard(msg.text, msg.id)}
-                            opacity={0.6}
-                            _hover={{ opacity: 1 }}
+                            opacity={0.5}
+                            _hover={{ opacity: 1, bg: 'whiteAlpha.600' }}
+                            borderRadius="lg"
+                            h="5"
+                            w="5"
+                            minW="auto"
                           />
                         </Tooltip>
                       )}
-                    </HStack>
+                    </Flex>
                   </Box>
                 </Flex>
               ))}
               
               {isLoading && (
-                <Flex gap={3}>
+                <Flex gap={2.5} maxWidth="90%">
                   <Avatar
-                    size="sm"
-                    icon={<Bot size={14} />}
-                    bg="blue.500"
-                    color="white"
+                    size="xs"
+                    icon={<Bot size={12} />}
+                    bg="transparent"
+                    border="1px solid"
+                    borderColor="gray.200"
                   />
                   <Box
                     bg={botBg}
                     p={3}
-                    borderRadius="lg"
-                    borderTopLeftRadius="0"
+                    borderRadius="2xl"
+                    borderTopLeftRadius="4px"
+                    shadow="sm"
                   >
-                    <Flex gap={1}>
-                      <Box w="2" h="2" bg="blue.500" borderRadius="full" animation="pulse 1s infinite" />
-                      <Box w="2" h="2" bg="blue.500" borderRadius="full" animation="pulse 1s infinite" style={{ animationDelay: '0.2s' }} />
-                      <Box w="2" h="2" bg="blue.500" borderRadius="full" animation="pulse 1s infinite" style={{ animationDelay: '0.4s' }} />
+                    <Flex gap={1} py={1}>
+                      <Box w="1.5" h="1.5" bg="brand.500" borderRadius="full" animation="pulse 1s infinite" />
+                      <Box w="1.5" h="1.5" bg="brand.500" borderRadius="full" animation="pulse 1s infinite" style={{ animationDelay: '0.2s' }} />
+                      <Box w="1.5" h="1.5" bg="brand.500" borderRadius="full" animation="pulse 1s infinite" style={{ animationDelay: '0.4s' }} />
                     </Flex>
                   </Box>
                 </Flex>
@@ -468,27 +461,32 @@ const AIChat = () => {
           
           {/* Quick Questions - Show on first load */}
           {messages.length === 1 && (
-            <Box p={4} borderTop="1px" borderColor={borderColor} bg={useColorModeValue('gray.50', 'gray.900')}>
-              <Text fontSize="xs" fontWeight="bold" mb={3} color="gray.600" textTransform="uppercase">
+            <Box p={3.5} borderTop="1px solid" borderColor={borderColor} bg="rgba(248, 250, 252, 0.8)">
+              <Text fontSize="10px" fontWeight="800" mb={2} color="gray.500" textTransform="uppercase" letterSpacing="0.5px">
                 ✨ Quick Start
               </Text>
-              <VStack spacing={2} align="stretch">
+              <VStack spacing={1.5} align="stretch">
                 {quickQuestions.map((q, idx) => (
                   <Button
                     key={idx}
-                    size="sm"
+                    size="xs"
                     variant="ghost"
                     justifyContent="flex-start"
                     fontSize="xs"
                     onClick={() => handleQuickQuestion(q.query)}
-                    leftIcon={<q.icon size={14} />}
+                    leftIcon={<q.icon size={13} style={{ color: '#6366f1' }} />}
                     _hover={{ 
-                      bg: useColorModeValue('blue.100', 'blue.900'),
-                      borderColor: 'blue.500'
+                      bg: 'rgba(99, 102, 241, 0.08)',
+                      color: 'brand.600'
                     }}
-                    border="1px"
-                    borderColor="transparent"
+                    border="1px solid"
+                    borderColor="gray.200"
+                    bg="white"
+                    borderRadius="xl"
                     transition="all 0.2s"
+                    fontWeight="600"
+                    py={2.5}
+                    h="auto"
                   >
                     {q.text}
                   </Button>
@@ -498,7 +496,7 @@ const AIChat = () => {
           )}
           
           {/* Input Area */}
-          <Box p={4} borderTop="1px" borderColor={borderColor} bg={chatBg}>
+          <Box p={3.5} borderTop="1px solid" borderColor={borderColor} bg="white">
             <InputGroup size="sm" mb={2}>
               <Textarea
                 ref={inputRef}
@@ -506,43 +504,49 @@ const AIChat = () => {
                 onChange={(e) => setInputText(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Ask me anything... (Shift+Enter for new line)"
-                borderRadius="md"
+                borderRadius="xl"
                 resize="none"
                 rows={2}
                 disabled={isLoading}
+                bg="gray.50"
+                border="1px solid"
+                borderColor="gray.200"
+                fontSize="xs"
                 _focus={{
-                  borderColor: 'blue.400',
-                  boxShadow: '0 0 0 1px blue.400'
+                  borderColor: 'brand.500',
+                  bg: 'white',
+                  boxShadow: 'none'
                 }}
               />
             </InputGroup>
             
-            <HStack justify="flex-end" gap={2}>
+            <HStack justify="space-between" align="center">
               <Tooltip label="Clear conversation">
                 <IconButton
-                  icon={<MessageCircle size={16} />}
+                  icon={<MessageCircle size={15} />}
                   size="sm"
                   variant="ghost"
                   onClick={clearChat}
                   aria-label="New chat"
+                  borderRadius="xl"
                 />
               </Tooltip>
               <Button
-                leftIcon={<Send size={16} />}
-                colorScheme="blue"
+                leftIcon={<Send size={14} />}
+                bg="linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)"
+                color="white"
                 size="sm"
                 onClick={() => handleSendMessage()}
                 isLoading={isLoading}
                 loadingText="Thinking..."
                 isDisabled={!inputText.trim() || isLoading}
-                bg="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
                 _hover={{
-                  transform: 'translateY(-2px)',
-                  shadow: 'lg'
+                  transform: 'translateY(-1px)',
+                  shadow: '0 4px 12px rgba(99, 102, 241, 0.2)'
                 }}
-                _active={{
-                  transform: 'translateY(0)'
-                }}
+                borderRadius="xl"
+                fontWeight="bold"
+                px={4}
               >
                 Send
               </Button>
@@ -551,23 +555,24 @@ const AIChat = () => {
           
           {/* Footer with hints */}
           <Flex 
-            p={2.5} 
-            borderTop="1px" 
+            p={2} 
+            borderTop="1px solid" 
             borderColor={borderColor}
             justifyContent="center"
-            fontSize="xs"
-            color="gray.500"
-            bg={useColorModeValue('gray.50', 'gray.900')}
-            gap={2}
+            fontSize="9px"
+            color="gray.400"
+            bg="gray.50"
+            gap={2.5}
             flexWrap="wrap"
+            fontWeight="bold"
           >
             <HStack spacing={1}>
-              <Kbd fontSize="xs">Enter</Kbd>
+              <Kbd fontSize="9px" px={1} py={0} borderRadius="md">Enter</Kbd>
               <Text>Send</Text>
             </HStack>
             <Text>•</Text>
             <HStack spacing={1}>
-              <Kbd fontSize="xs">Shift+Enter</Kbd>
+              <Kbd fontSize="9px" px={1} py={0} borderRadius="md">Shift+Enter</Kbd>
               <Text>New line</Text>
             </HStack>
           </Flex>

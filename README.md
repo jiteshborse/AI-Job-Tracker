@@ -129,9 +129,11 @@ npm install
 3. **Create `.env` file in backend folder**
 ```env
 PORT=5000
-OPENAI_API_KEY=your_openai_api_key
+GEMINI_API_KEY=your_gemini_api_key
 ADZUNA_APP_ID=your_adzuna_app_id
 ADZUNA_APP_KEY=your_adzuna_app_key
+ADZUNA_COUNTRY=us
+
 ```
 
 Alternatively, copy the sample file:
@@ -186,11 +188,11 @@ You can deploy the React frontend to Vercel and point it at your hosted backend.
 
 ## 🔑 API Keys Setup
 
-### OpenAI API Key
-1. Visit [OpenAI Platform](https://platform.openai.com/)
+### Gemini API Key
+1. Visit [Google AI Studio](https://aistudio.google.com/)
 2. Sign up/Login and go to API Keys
 3. Create a new secret key
-4. Add to `.env` as `OPENAI_API_KEY`
+4. Add to `.env` as `GEMINI_API_KEY`
 
 ### Adzuna API Credentials
 1. Visit [Adzuna Developer Portal](https://developer.adzuna.com/)

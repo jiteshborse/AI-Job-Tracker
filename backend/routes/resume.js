@@ -3,8 +3,12 @@ const path = require('path');
 const fs = require('fs').promises;
 const storage = require('../storage');
 const FileParser = require('../utils/fileParser');
+const aiService = require('../services/aiService');
+const { authenticate } = require('../middleware/auth');
 
 async function routes(fastify, options) {
+    // Apply authenticate hook to all endpoints in this router
+    fastify.addHook('preHandler', authenticate);
 
     // Ensure uploads directory exists
     const uploadsDir = path.join(__dirname, '../uploads');
@@ -18,7 +22,7 @@ async function routes(fastify, options) {
     fastify.post('/upload', async (request, reply) => {
         try {
             const data = await request.file();
-            const userId = 'demo-user'; // For demo, use fixed user
+            const userId = request.userId;
 
             if (!data) {
                 return reply.code(400).send({
@@ -89,7 +93,7 @@ async function routes(fastify, options) {
 
                 // Extract skills
                 console.log('🔍 Extracting resume information...');
-                const extractedInfo = FileParser.extractResumeInfo(resumeText);
+                const extractedInfo = await aiService.extractResumeInfo(resumeText);
                 console.log(`✅ Found ${extractedInfo.skills?.length || 0} skills`);
 
                 // Create resume object
@@ -104,7 +108,7 @@ async function routes(fastify, options) {
                 };
 
                 // Store resume
-                storage.setResume(userId, resume);
+                await storage.setResume(userId, resume);
                 console.log(`💾 Resume stored for user: ${userId}`);
 
                 return {
@@ -141,8 +145,8 @@ async function routes(fastify, options) {
 
     // Get current resume
     fastify.get('/', async (request, reply) => {
-        const { userId = 'demo-user' } = request.query;
-        const resume = storage.getResume(userId);
+        const userId = request.userId;
+        const resume = await storage.getResume(userId);
 
         if (!resume) {
             return {

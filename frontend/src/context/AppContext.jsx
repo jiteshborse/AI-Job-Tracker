@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
-import { jobApi, resumeApi, applicationApi } from '../services/api';
+import { authApi, jobApi, resumeApi, applicationApi } from '../services/api';
 import toast from 'react-hot-toast';
 
 const AppContext = createContext();
@@ -28,13 +28,12 @@ export const AppProvider = ({ children }) => {
     const [currentPage, setCurrentPage] = useState(1);
     const [totalJobs, setTotalJobs] = useState(0);
 
-    // Generate unique session ID for each visit (new session every time)
-    const [userId] = useState(() => {
-        // Clear any old data on fresh load
-        localStorage.clear();
-        sessionStorage.clear();
-        return `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    });
+    // Authentication state
+    const [token, setToken] = useState(() => localStorage.getItem('token'));
+    const [user, setUser] = useState(null);
+    const [authLoading, setAuthLoading] = useState(true);
+
+    const userId = user?.id || '';
 
     // Fetch jobs with filters
     const fetchJobs = async (customFilters = {}, page = 1, append = false) => {
@@ -83,6 +82,18 @@ export const AppProvider = ({ children }) => {
         }
     };
 
+    // Delete application
+    const deleteApplication = async (appId) => {
+        try {
+            await applicationApi.deleteApplication(appId);
+            toast.success('Application deleted successfully');
+            fetchApplications();
+        } catch (error) {
+            console.error('Error deleting application:', error);
+            toast.error('Failed to delete application');
+        }
+    };
+
     // Check for resume on mount
     const checkResume = async () => {
         try {
@@ -105,7 +116,6 @@ export const AppProvider = ({ children }) => {
     const uploadResume = async (file) => {
         const formData = new FormData();
         formData.append('resume', file);
-        formData.append('userId', userId);
 
         try {
             const response = await resumeApi.uploadResume(formData);
@@ -121,8 +131,8 @@ export const AppProvider = ({ children }) => {
                 setIsFirstLogin(false); // Resume uploaded, first login complete
                 toast.success('Resume uploaded successfully!');
                 
-                // Fetch jobs based on resume skills - backend will use extracted skills
-                fetchJobs(); // No role param - lets backend use resume skills for intelligent search
+                // Fetch jobs based on resume skills
+                fetchJobs(); 
                 return response.data;
             }
         } catch (error) {
@@ -197,6 +207,79 @@ export const AppProvider = ({ children }) => {
         setPendingConfirmation(null);
     };
 
+    // Login action
+    const login = async (email, password) => {
+        setLoading(true);
+        try {
+            const response = await authApi.login({ email, password });
+            const { token, user: userData } = response.data;
+            
+            localStorage.setItem('token', token);
+            setToken(token);
+            setUser(userData);
+            toast.success('Logged in successfully!');
+
+            // Load user data
+            const resumeResponse = await resumeApi.getResume();
+            if (resumeResponse.data.hasResume) {
+                setUserResume(resumeResponse.data);
+                setIsFirstLogin(false);
+            } else {
+                setShowResumeUpload(true);
+                setIsFirstLogin(true);
+            }
+
+            // Fetch jobs and applications
+            const jobsResponse = await jobApi.getJobs({ page: 1 });
+            setJobs(jobsResponse.data.jobs || []);
+            setBestMatches(jobsResponse.data.bestMatches || []);
+            setTotalJobs(jobsResponse.data.total || (jobsResponse.data.jobs || []).length);
+            
+            const appsResponse = await applicationApi.getApplications();
+            setApplications(appsResponse.data.applications || []);
+            
+            return userData;
+        } catch (error) {
+            console.error('Login error:', error);
+            toast.error(error.response?.data?.message || 'Login failed');
+            throw error;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Register action
+    const register = async (name, email, password) => {
+        setLoading(true);
+        try {
+            const response = await authApi.register({ name, email, password });
+            const { token, user: userData } = response.data;
+            
+            localStorage.setItem('token', token);
+            setToken(token);
+            setUser(userData);
+            toast.success('Account created successfully!');
+
+            setShowResumeUpload(true);
+            setIsFirstLogin(true);
+            
+            // Load fresh jobs list
+            const jobsResponse = await jobApi.getJobs({ page: 1 });
+            setJobs(jobsResponse.data.jobs || []);
+            setBestMatches(jobsResponse.data.bestMatches || []);
+            setTotalJobs(jobsResponse.data.total || (jobsResponse.data.jobs || []).length);
+            setApplications([]);
+
+            return userData;
+        } catch (error) {
+            console.error('Registration error:', error);
+            toast.error(error.response?.data?.message || 'Registration failed');
+            throw error;
+        } finally {
+            setLoading(false);
+        }
+    };
+
     // Logout function - reset all app state
     const logout = async () => {
         // Reset all state to initial values
@@ -215,33 +298,58 @@ export const AppProvider = ({ children }) => {
         setUserResume(null);
         setLoading(false);
         setIsFirstLogin(true);
-        setShowResumeUpload(true);
+        setShowResumeUpload(false);
         
-        // Clear any stored data
-        localStorage.removeItem('lastJobClick');
-        sessionStorage.clear();
-        try {
-            await applicationApi.clearApplications(userId);
-        } catch (error) {
-            console.error('Error clearing applications on logout:', error);
-        }
+        // Clear auth state
+        localStorage.removeItem('token');
+        setToken(null);
+        setUser(null);
         
         toast.success('Logged out successfully!');
     };
 
-    // Initialize - clear session and force new resume upload
+    // Initialize - load persistent user session
     useEffect(() => {
-        // Clear any persisted data
-        localStorage.clear();
-        sessionStorage.clear();
-        
-        // Start fresh - always show resume upload modal
-        setShowResumeUpload(true);
-        setIsFirstLogin(true);
-        setUserResume(null);
-        
-        // Fetch initial jobs without resume
-        fetchJobs();
+        const initializeAuth = async () => {
+            const storedToken = localStorage.getItem('token');
+            if (storedToken) {
+                try {
+                    const response = await authApi.getProfile();
+                    setUser(response.data.user);
+                    
+                    // Fetch user-specific resume
+                    const resumeResponse = await resumeApi.getResume();
+                    if (resumeResponse.data.hasResume) {
+                        setUserResume(resumeResponse.data);
+                        setIsFirstLogin(false);
+                    } else {
+                        setShowResumeUpload(true);
+                        setIsFirstLogin(true);
+                    }
+                    
+                    // Fetch jobs and applications
+                    const jobsResponse = await jobApi.getJobs({ page: 1 });
+                    setJobs(jobsResponse.data.jobs || []);
+                    setBestMatches(jobsResponse.data.bestMatches || []);
+                    setTotalJobs(jobsResponse.data.total || (jobsResponse.data.jobs || []).length);
+                    
+                    const appsResponse = await applicationApi.getApplications();
+                    setApplications(appsResponse.data.applications || []);
+                } catch (error) {
+                    console.error('Session expired or invalid:', error);
+                    localStorage.removeItem('token');
+                    setToken(null);
+                    setUser(null);
+                }
+            } else {
+                // Not logged in, clear jobs state
+                setJobs([]);
+                setBestMatches([]);
+                setTotalJobs(0);
+            }
+            setAuthLoading(false);
+        };
+        initializeAuth();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -267,8 +375,14 @@ export const AppProvider = ({ children }) => {
             pendingConfirmation,
             handleApplicationConfirmation,
             fetchApplications,
+            deleteApplication,
             logout,
-            userId
+            userId,
+            user,
+            token,
+            authLoading,
+            login,
+            register
         }}>
             {children}
         </AppContext.Provider>

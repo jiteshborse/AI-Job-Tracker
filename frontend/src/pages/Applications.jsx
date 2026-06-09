@@ -23,7 +23,7 @@ import {
     SimpleGrid,
     Alert,
     AlertIcon,
-    useColorModeValue
+    IconButton
 } from '@chakra-ui/react';
 import {
     Calendar,
@@ -33,21 +33,35 @@ import {
     AlertCircle,
     FileText,
     Download,
-    Filter
+    Filter,
+    Trash2,
+    Kanban,
+    Table as TableIcon,
+    ArrowRight,
+    ArrowLeft
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { formatDistanceToNow } from 'date-fns';
+import toast from 'react-hot-toast';
 
 const Applications = () => {
-    const { applications, updateApplicationStatus, fetchApplications } = useApp();
+    const { applications, updateApplicationStatus, fetchApplications, deleteApplication } = useApp();
     const [statusFilter, setStatusFilter] = useState('all');
+    const [viewType, setViewType] = useState('kanban'); // 'kanban' or 'table'
 
-    const cardBg = useColorModeValue('white', 'gray.800');
-    const borderColor = useColorModeValue('gray.200', 'gray.700');
-    const tableHeaderBg = useColorModeValue('gray.50', 'gray.700');
-    const tableHoverBg = useColorModeValue('gray.50', 'gray.700');
-    const selectBg = useColorModeValue('white', 'gray.700');
+    const handleDeleteApplication = async (appId) => {
+        if (window.confirm('Are you sure you want to delete this application?')) {
+            await deleteApplication(appId);
+            toast.success('Application deleted');
+        }
+    };
+
+    const cardBg = 'white';
+    const borderColor = 'rgba(226, 232, 240, 0.8)';
+    const tableHeaderBg = 'gray.50';
+    const tableHoverBg = 'gray.50';
+    const selectBg = 'white';
 
     // Filter applications using useMemo
     const filteredApps = useMemo(() => {
@@ -81,16 +95,35 @@ const Applications = () => {
 
     const getStatusIcon = (status) => {
         switch (status) {
-            case 'Applied': return <FileText size={16} />;
-            case 'Interview': return <Clock size={16} />;
-            case 'Offer': return <CheckCircle size={16} />;
-            case 'Rejected': return <XCircle size={16} />;
-            default: return <AlertCircle size={16} />;
+            case 'Applied': return <FileText size={14} />;
+            case 'Interview': return <Clock size={14} />;
+            case 'Offer': return <CheckCircle size={14} />;
+            case 'Rejected': return <XCircle size={14} />;
+            default: return <AlertCircle size={14} />;
         }
     };
 
     const handleStatusChange = async (appId, newStatus) => {
         await updateApplicationStatus(appId, newStatus);
+        toast.success(`Status updated to ${newStatus}`);
+    };
+
+    const moveStatusLeft = async (app) => {
+        const statuses = ['Applied', 'Interview', 'Offer', 'Rejected'];
+        const currentIndex = statuses.indexOf(app.status);
+        if (currentIndex > 0) {
+            const nextStatus = statuses[currentIndex - 1];
+            await handleStatusChange(app.id, nextStatus);
+        }
+    };
+
+    const moveStatusRight = async (app) => {
+        const statuses = ['Applied', 'Interview', 'Offer', 'Rejected'];
+        const currentIndex = statuses.indexOf(app.status);
+        if (currentIndex < statuses.length - 1) {
+            const nextStatus = statuses[currentIndex + 1];
+            await handleStatusChange(app.id, nextStatus);
+        }
     };
 
     const exportApplications = () => {
@@ -103,8 +136,10 @@ const Applications = () => {
             a.download = 'job-applications.json';
             a.click();
             URL.revokeObjectURL(url);
+            toast.success('Data exported successfully!');
         } catch (error) {
             console.error('Export failed:', error);
+            toast.error('Export failed');
         }
     };
 
@@ -136,260 +171,441 @@ const Applications = () => {
 
     if (applications.length === 0) {
         return (
-            <Box textAlign="center" py={20}>
-                <FileText size={64} style={{ margin: '0 auto 20px', color: '#CBD5E0' }} />
-                <Heading size="lg" mb={3}>No Applications Yet</Heading>
-                <Text color="gray.600" mb={6}>
-                    Start applying to jobs from the Job Feed to track your progress here
+            <Box textAlign="center" py={20} className="scale-in">
+                <FileText size={64} style={{ margin: '0 auto 20px', color: '#cbd5e1' }} />
+                <Heading size="lg" mb={3} fontWeight="800" fontFamily="'Plus Jakarta Sans', sans-serif">No Applications Yet</Heading>
+                <Text color="gray.500" mb={6} fontWeight="500">
+                    Track your job applications in one place. Apply to positions on the Job Feed to see them here!
                 </Text>
-                <Button colorScheme="blue">
-                    Browse Jobs
-                </Button>
             </Box>
         );
     }
 
     return (
-        <Box>
-            {/* Header */}
+        <Box className="fade-in">
+            {/* Header block */}
             <Flex justifyContent="space-between" alignItems="center" mb={8} flexWrap="wrap" gap={4}>
                 <Box>
-                    <Heading size="lg" mb={2}>Application Tracker</Heading>
-                    <Text color="gray.600">
-                        Track and manage your job applications in one place
+                    <Heading 
+                        size="lg" 
+                        fontWeight="800" 
+                        fontFamily="'Plus Jakarta Sans', sans-serif"
+                        letterSpacing="-0.5px"
+                        color="gray.800"
+                        mb={1.5}
+                    >
+                        Application Tracker
+                    </Heading>
+                    <Text color="gray.500" fontSize="sm" fontWeight="500">
+                        Monitor and progress your active job applications
                     </Text>
                 </Box>
 
-                <HStack>
+                <HStack spacing={2.5}>
                     <Button
-                        leftIcon={<Download size={18} />}
+                        leftIcon={<Download size={16} />}
                         variant="outline"
+                        borderColor="gray.200"
+                        _hover={{ bg: 'gray.50' }}
+                        borderRadius="xl"
+                        fontSize="xs"
+                        fontWeight="bold"
                         onClick={exportApplications}
                     >
-                        Export Data
+                        Export JSON
                     </Button>
                     <Button
-                        leftIcon={<Filter size={18} />}
-                        colorScheme="blue"
+                        leftIcon={<Filter size={16} />}
+                        bg="linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)"
+                        color="white"
+                        _hover={{ bg: 'linear-gradient(135deg, #4f46e5 0%, #4338ca 100%)' }}
+                        borderRadius="xl"
+                        fontSize="xs"
+                        fontWeight="bold"
                         onClick={() => fetchApplications()}
                     >
-                        Refresh
+                        Refresh Data
                     </Button>
                 </HStack>
             </Flex>
 
-            {/* Stats Cards */}
-            <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={4} mb={8}>
-                <Box bg={cardBg} p={4} borderRadius="lg" border="1px" borderColor={borderColor}>
+            {/* Premium Stats Widgets */}
+            <SimpleGrid columns={{ base: 1, sm: 2, lg: 4 }} spacing={5} mb={8}>
+                <Box bg={cardBg} p={5} borderRadius="2xl" border="1px solid" borderColor={borderColor} shadow="0 4px 20px rgba(0, 0, 0, 0.01)">
                     <Stat>
-                        <StatLabel>Total Applications</StatLabel>
-                        <StatNumber fontSize="3xl">{totalApps}</StatNumber>
-                        <StatHelpText>
-                            <StatArrow type="increase" />
-                            23% from last month
+                        <StatLabel fontSize="xs" fontWeight="bold" color="gray.400" textTransform="uppercase" letterSpacing="0.5px">Total Applications</StatLabel>
+                        <StatNumber fontSize="3xl" fontWeight="800" color="gray.850" fontFamily="'Plus Jakarta Sans', sans-serif" py={1}>{totalApps}</StatNumber>
+                        <StatHelpText fontSize="10px" fontWeight="bold" color="gray.500" m={0}>
+                            All parsed/tracked entries
                         </StatHelpText>
                     </Stat>
                 </Box>
 
-                <Box bg={cardBg} p={4} borderRadius="lg" border="1px" borderColor={borderColor}>
+                <Box bg={cardBg} p={5} borderRadius="2xl" border="1px solid" borderColor={borderColor} shadow="0 4px 20px rgba(0, 0, 0, 0.01)">
                     <Stat>
-                        <StatLabel>Interview Rate</StatLabel>
-                        <StatNumber fontSize="3xl">{interviewRate}%</StatNumber>
-                        <StatHelpText>
-                            {interviewCount} interviews
+                        <StatLabel fontSize="xs" fontWeight="bold" color="gray.400" textTransform="uppercase" letterSpacing="0.5px">Interview Rate</StatLabel>
+                        <StatNumber fontSize="3xl" fontWeight="800" color="yellow.500" fontFamily="'Plus Jakarta Sans', sans-serif" py={1}>{interviewRate}%</StatNumber>
+                        <StatHelpText fontSize="10px" fontWeight="bold" color="gray.500" m={0}>
+                            {interviewCount} interview schedules
                         </StatHelpText>
                     </Stat>
                 </Box>
 
-                <Box bg={cardBg} p={4} borderRadius="lg" border="1px" borderColor={borderColor}>
+                <Box bg={cardBg} p={5} borderRadius="2xl" border="1px solid" borderColor={borderColor} shadow="0 4px 20px rgba(0, 0, 0, 0.01)">
                     <Stat>
-                        <StatLabel>Offer Rate</StatLabel>
-                        <StatNumber fontSize="3xl">{offerRate}%</StatNumber>
-                        <StatHelpText>
-                            {offerCount} offers
+                        <StatLabel fontSize="xs" fontWeight="bold" color="gray.400" textTransform="uppercase" letterSpacing="0.5px">Offer Rate</StatLabel>
+                        <StatNumber fontSize="3xl" fontWeight="800" color="green.500" fontFamily="'Plus Jakarta Sans', sans-serif" py={1}>{offerRate}%</StatNumber>
+                        <StatHelpText fontSize="10px" fontWeight="bold" color="gray.500" m={0}>
+                            {offerCount} received offers
                         </StatHelpText>
                     </Stat>
                 </Box>
 
-                <Box bg={cardBg} p={4} borderRadius="lg" border="1px" borderColor={borderColor}>
+                <Box bg={cardBg} p={5} borderRadius="2xl" border="1px solid" borderColor={borderColor} shadow="0 4px 20px rgba(0, 0, 0, 0.01)">
                     <Stat>
-                        <StatLabel>Active Applications</StatLabel>
-                        <StatNumber fontSize="3xl">
+                        <StatLabel fontSize="xs" fontWeight="bold" color="gray.400" textTransform="uppercase" letterSpacing="0.5px">Active Pipeline</StatLabel>
+                        <StatNumber fontSize="3xl" fontWeight="800" color="blue.500" fontFamily="'Plus Jakarta Sans', sans-serif" py={1}>
                             {applications.filter(app => ['Applied', 'Interview'].includes(app.status)).length}
                         </StatNumber>
-                        <StatHelpText>
-                            Still in progress
+                        <StatHelpText fontSize="10px" fontWeight="bold" color="gray.500" m={0}>
+                            In progress categories
                         </StatHelpText>
                     </Stat>
                 </Box>
             </SimpleGrid>
 
-            {/* Status Progress */}
-            <Box bg={cardBg} p={6} borderRadius="lg" border="1px" borderColor={borderColor} mb={8}>
-                <Heading size="md" mb={4}>Application Pipeline</Heading>
-                <Flex alignItems="center" gap={4} flexWrap="wrap">
+            {/* Pipeline progress bar indicators */}
+            <Box bg={cardBg} p={6} borderRadius="2xl" border="1px solid" borderColor={borderColor} mb={8} shadow="0 4px 20px rgba(0, 0, 0, 0.01)">
+                <Heading size="xs" fontWeight="800" color="gray.700" mb={4} textTransform="uppercase" letterSpacing="0.5px">Pipeline Distribution</Heading>
+                <SimpleGrid columns={{ base: 1, md: 4 }} spacing={4}>
                     {['Applied', 'Interview', 'Offer', 'Rejected'].map((status) => {
                         const count = applications.filter(app => app.status === status).length;
                         const percentage = totalApps > 0 ? (count / totalApps) * 100 : 0;
 
                         return (
-                            <Box key={status} flex="1" minW="150px">
-                                <Flex justifyContent="space-between" mb={1}>
-                                    <Text fontSize="sm" fontWeight="medium">{status}</Text>
-                                    <Badge colorScheme={getStatusColor(status)}>{count}</Badge>
+                            <Box key={status}>
+                                <Flex justifyContent="space-between" mb={1} align="center">
+                                    <Text fontSize="xs" fontWeight="bold" color="gray.600">{status}</Text>
+                                    <Badge colorScheme={getStatusColor(status)} borderRadius="full" px={2}>{count}</Badge>
                                 </Flex>
                                 <Progress
                                     value={percentage}
                                     colorScheme={getStatusColor(status)}
-                                    size="sm"
+                                    size="xs"
                                     borderRadius="full"
+                                    bg="gray.100"
                                 />
-                                <Text fontSize="xs" color="gray.500" mt={1}>
+                                <Text fontSize="10px" color="gray.400" mt={1} fontWeight="bold">
                                     {percentage.toFixed(1)}%
                                 </Text>
                             </Box>
                         );
                     })}
-                </Flex>
+                </SimpleGrid>
             </Box>
 
-            {/* Filters */}
+            {/* View Filter Mode Selector */}
             <Flex justifyContent="space-between" alignItems="center" mb={6} flexWrap="wrap" gap={4}>
-                <Heading size="md">Your Applications ({filteredApps.length})</Heading>
+                <Heading size="sm" fontWeight="800" color="gray.700" fontFamily="'Plus Jakarta Sans', sans-serif">
+                    Applications ({filteredApps.length})
+                </Heading>
 
-                <HStack>
-                    <Text fontSize="sm">Filter by status:</Text>
-                    <Select
-                        value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value)}
-                        size="sm"
-                        width="150px"
-                    >
-                        <option value="all">All Status</option>
-                        <option value="Applied">Applied</option>
-                        <option value="Interview">Interview</option>
-                        <option value="Offer">Offer</option>
-                        <option value="Rejected">Rejected</option>
-                    </Select>
+                <HStack spacing={4}>
+                    {/* View Switch Mode Toggle */}
+                    <HStack spacing={1.5} bg="gray.100" p={1} borderRadius="xl">
+                        <Button
+                            leftIcon={<Kanban size={14} />}
+                            size="xs"
+                            borderRadius="lg"
+                            fontWeight="bold"
+                            onClick={() => setViewType('kanban')}
+                            variant={viewType === 'kanban' ? 'solid' : 'ghost'}
+                            bg={viewType === 'kanban' ? 'white' : 'transparent'}
+                            color={viewType === 'kanban' ? 'brand.600' : 'gray.650'}
+                            shadow={viewType === 'kanban' ? 'sm' : 'none'}
+                            _hover={{ bg: viewType === 'kanban' ? 'white' : 'whiteAlpha.600' }}
+                        >
+                            Kanban
+                        </Button>
+                        <Button
+                            leftIcon={<TableIcon size={14} />}
+                            size="xs"
+                            borderRadius="lg"
+                            fontWeight="bold"
+                            onClick={() => setViewType('table')}
+                            variant={viewType === 'table' ? 'solid' : 'ghost'}
+                            bg={viewType === 'table' ? 'white' : 'transparent'}
+                            color={viewType === 'table' ? 'brand.600' : 'gray.650'}
+                            shadow={viewType === 'table' ? 'sm' : 'none'}
+                            _hover={{ bg: viewType === 'table' ? 'white' : 'whiteAlpha.600' }}
+                        >
+                            Table
+                        </Button>
+                    </HStack>
+
+                    <HStack size="sm">
+                        <Text fontSize="xs" fontWeight="bold" color="gray.500" whiteSpace="nowrap">Status:</Text>
+                        <Select
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                            size="sm"
+                            width="140px"
+                            borderRadius="lg"
+                            bg={selectBg}
+                            border="1px solid"
+                            borderColor="gray.200"
+                            fontSize="xs"
+                        >
+                            <option value="all">All Status</option>
+                            <option value="Applied">Applied</option>
+                            <option value="Interview">Interview</option>
+                            <option value="Offer">Offer</option>
+                            <option value="Rejected">Rejected</option>
+                        </Select>
+                    </HStack>
                 </HStack>
             </Flex>
 
-            {/* Applications Table */}
-            <Box
-                bg={cardBg}
-                borderRadius="lg"
-                border="1px"
-                borderColor={borderColor}
-                overflow="hidden"
-                overflowX="auto"
-            >
-                <Table variant="simple">
-                    <Thead bg={tableHeaderBg}>
-                        <Tr>
-                            <Th>Job Title</Th>
-                            <Th>Company</Th>
-                            <Th>Date Applied</Th>
-                            <Th>Status</Th>
-                            <Th>Last Updated</Th>
-                            <Th>Actions</Th>
-                        </Tr>
-                    </Thead>
-                    <Tbody>
-                        {filteredApps.map((app) => (
-                            <Tr key={app.id} _hover={{ bg: tableHoverBg }}>
-                                <Td fontWeight="medium">{app.jobTitle || 'N/A'}</Td>
-                                <Td>{app.company || 'N/A'}</Td>
-                                <Td>
-                                    <Flex alignItems="center" gap={2}>
-                                        <Calendar size={14} />
-                                        {formatDate(app.appliedDate || app.createdAt)}
-                                    </Flex>
-                                </Td>
-                                <Td>
-                                    <Badge
-                                        colorScheme={getStatusColor(app.status)}
-                                        display="flex"
-                                        alignItems="center"
-                                        gap={1}
-                                        width="fit-content"
-                                        px={2}
-                                        py={1}
-                                    >
-                                        {getStatusIcon(app.status)}
-                                        {app.status || 'N/A'}
-                                    </Badge>
-                                </Td>
-                                <Td>
-                                    <Text fontSize="sm">
-                                        {formatTimeAgo(app.updatedAt || app.createdAt)}
-                                    </Text>
-                                </Td>
-                                <Td>
-                                    <Select
-                                        value={app.status || 'Applied'}
-                                        onChange={(e) => handleStatusChange(app.id, e.target.value)}
-                                        size="sm"
-                                        width="140px"
-                                        bg={selectBg}
-                                    >
-                                        <option value="Applied">Applied</option>
-                                        <option value="Interview">Interview</option>
-                                        <option value="Offer">Offer</option>
-                                        <option value="Rejected">Rejected</option>
-                                    </Select>
-                                </Td>
-                            </Tr>
-                        ))}
-                    </Tbody>
-                </Table>
-            </Box>
+            {/* Kanban view vs Table view content block */}
+            {viewType === 'kanban' ? (
+                <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={4}>
+                    {['Applied', 'Interview', 'Offer', 'Rejected'].map((status) => {
+                        const colApps = filteredApps.filter(app => app.status === status);
+                        return (
+                            <Box 
+                                key={status} 
+                                bg="rgba(241, 245, 249, 0.5)" 
+                                p={4} 
+                                borderRadius="2xl" 
+                                border="1px solid" 
+                                borderColor="rgba(226, 232, 240, 0.6)"
+                                minH="450px"
+                            >
+                                <Flex align="center" justify="space-between" mb={4} pb={2} borderBottom="2px solid" borderBottomColor={`${getStatusColor(status)}.200`}>
+                                    <HStack spacing={2}>
+                                        <Box color={`${getStatusColor(status)}.500`}>
+                                            {getStatusIcon(status)}
+                                        </Box>
+                                        <Text fontSize="sm" fontWeight="800" color="gray.700">{status}</Text>
+                                    </HStack>
+                                    <Badge colorScheme={getStatusColor(status)} borderRadius="full" px={2}>{colApps.length}</Badge>
+                                </Flex>
 
-            {/* Timeline View */}
-            <Box mt={10}>
-                <Heading size="md" mb={6}>Recent Activity</Heading>
-                <VStack spacing={4} align="stretch">
-                    {applications.slice(0, 5).map((app) => (
-                        <Flex
-                            key={app.id}
-                            bg={cardBg}
-                            p={4}
-                            borderRadius="lg"
-                            border="1px"
-                            borderColor={borderColor}
-                            alignItems="center"
-                            gap={4}
-                        >
-                            <Box
-                                w="12px"
-                                h="12px"
-                                borderRadius="full"
-                                bg={`${getStatusColor(app.status)}.500`}
-                            />
-                            <Box flex="1">
-                                <Text fontWeight="medium">{app.jobTitle || 'Unknown Job'} at {app.company || 'Unknown Company'}</Text>
-                                <Text fontSize="sm" color="gray.600">
-                                    Status: <Badge colorScheme={getStatusColor(app.status)}>{app.status || 'N/A'}</Badge>
-                                </Text>
+                                <VStack spacing={3} align="stretch">
+                                    {colApps.map((app) => (
+                                        <Box
+                                            key={app.id}
+                                            bg="white"
+                                            p={4}
+                                            borderRadius="xl"
+                                            border="1px solid"
+                                            borderColor="gray.200"
+                                            shadow="sm"
+                                            _hover={{ shadow: 'md', transform: 'translateY(-2px)' }}
+                                            transition="all 0.2s"
+                                            position="relative"
+                                        >
+                                            <Heading size="xs" color="gray.850" fontWeight="800" mb={1} pr={6} isTruncated>
+                                                {app.jobTitle || 'N/A'}
+                                            </Heading>
+                                            <Text fontSize="11px" color="gray.500" fontWeight="600" mb={2}>{app.company || 'N/A'}</Text>
+                                            
+                                            <Flex align="center" gap={1} mb={3.5} color="gray.400">
+                                                <Calendar size={11} />
+                                                <Text fontSize="9px" fontWeight="bold">{formatDate(app.appliedDate || app.createdAt)}</Text>
+                                            </Flex>
+
+                                            {/* Kanban Drag/Arrow status controls */}
+                                            <Flex justify="space-between" align="center" borderTop="1px solid" borderColor="gray.50" pt={2.5}>
+                                                <HStack spacing={1}>
+                                                    <IconButton
+                                                        icon={<ArrowLeft size={11} />}
+                                                        size="xs"
+                                                        onClick={() => moveStatusLeft(app)}
+                                                        isDisabled={status === 'Applied'}
+                                                        aria-label="Move back"
+                                                        variant="ghost"
+                                                    />
+                                                    <IconButton
+                                                        icon={<ArrowRight size={11} />}
+                                                        size="xs"
+                                                        onClick={() => moveStatusRight(app)}
+                                                        isDisabled={status === 'Rejected'}
+                                                        aria-label="Move forward"
+                                                        variant="ghost"
+                                                    />
+                                                </HStack>
+                                                
+                                                <IconButton
+                                                    icon={<Trash2 size={12} />}
+                                                    size="xs"
+                                                    colorScheme="red"
+                                                    variant="ghost"
+                                                    onClick={() => handleDeleteApplication(app.id)}
+                                                    aria-label="Delete"
+                                                />
+                                            </Flex>
+                                        </Box>
+                                    ))}
+                                    {colApps.length === 0 && (
+                                        <Flex justify="center" align="center" minH="120px" border="2px dashed" borderColor="gray.200" borderRadius="xl">
+                                            <Text fontSize="10px" color="gray.400" fontWeight="bold">Empty column</Text>
+                                        </Flex>
+                                    )}
+                                </VStack>
                             </Box>
-                            <Text fontSize="sm">
-                                {formatTimeAgo(app.updatedAt || app.createdAt)}
-                            </Text>
-                        </Flex>
-                    ))}
-                </VStack>
-            </Box>
-
-            {/* Tips */}
-            <Alert status="info" borderRadius="lg" mt={8}>
-                <AlertIcon />
-                <Box>
-                    <Text fontWeight="medium">Pro Tip</Text>
-                    <Text fontSize="sm">
-                        Update your application status regularly to track your job search progress accurately.
-                        Follow up within 7-10 days if you haven't heard back.
-                    </Text>
+                        );
+                    })}
+                </SimpleGrid>
+            ) : (
+                <Box
+                    bg={cardBg}
+                    borderRadius="2xl"
+                    border="1px solid"
+                    borderColor={borderColor}
+                    overflow="hidden"
+                    overflowX="auto"
+                    shadow="sm"
+                >
+                    <Table variant="simple">
+                        <Thead bg={tableHeaderBg}>
+                            <Tr>
+                                <Th fontSize="xs" fontWeight="bold" color="gray.400">Job Title</Th>
+                                <Th fontSize="xs" fontWeight="bold" color="gray.400">Company</Th>
+                                <Th fontSize="xs" fontWeight="bold" color="gray.400">Date Applied</Th>
+                                <Th fontSize="xs" fontWeight="bold" color="gray.400">Status</Th>
+                                <Th fontSize="xs" fontWeight="bold" color="gray.400">Last Updated</Th>
+                                <Th fontSize="xs" fontWeight="bold" color="gray.400">Actions</Th>
+                            </Tr>
+                        </Thead>
+                        <Tbody>
+                            {filteredApps.map((app) => (
+                                <Tr key={app.id} _hover={{ bg: tableHoverBg }}>
+                                    <Td fontWeight="bold" fontSize="xs" color="gray.700">{app.jobTitle || 'N/A'}</Td>
+                                    <Td fontSize="xs" color="gray.600" fontWeight="500">{app.company || 'N/A'}</Td>
+                                    <Td fontSize="xs">
+                                        <Flex alignItems="center" gap={1.5} color="gray.500">
+                                            <Calendar size={13} />
+                                            {formatDate(app.appliedDate || app.createdAt)}
+                                        </Flex>
+                                    </Td>
+                                    <Td>
+                                        <Badge
+                                            colorScheme={getStatusColor(app.status)}
+                                            display="flex"
+                                            alignItems="center"
+                                            gap={1}
+                                            width="fit-content"
+                                            px={2.5}
+                                            py={0.5}
+                                            borderRadius="full"
+                                            fontSize="10px"
+                                            fontWeight="bold"
+                                        >
+                                            {getStatusIcon(app.status)}
+                                            {app.status || 'N/A'}
+                                        </Badge>
+                                    </Td>
+                                    <Td fontSize="xs" color="gray.500" fontWeight="500">
+                                        {formatTimeAgo(app.updatedAt || app.createdAt)}
+                                    </Td>
+                                    <Td>
+                                        <HStack spacing={2}>
+                                            <Select
+                                                value={app.status || 'Applied'}
+                                                onChange={(e) => handleStatusChange(app.id, e.target.value)}
+                                                size="sm"
+                                                width="120px"
+                                                borderRadius="lg"
+                                                bg={selectBg}
+                                                fontSize="xs"
+                                            >
+                                                <option value="Applied">Applied</option>
+                                                <option value="Interview">Interview</option>
+                                                <option value="Offer">Offer</option>
+                                                <option value="Rejected">Rejected</option>
+                                            </Select>
+                                            <IconButton
+                                                icon={<Trash2 size={14} />}
+                                                size="sm"
+                                                colorScheme="red"
+                                                variant="ghost"
+                                                onClick={() => handleDeleteApplication(app.id)}
+                                                aria-label="Delete Application"
+                                                borderRadius="lg"
+                                            />
+                                        </HStack>
+                                    </Td>
+                                </Tr>
+                            ))}
+                        </Tbody>
+                    </Table>
                 </Box>
-            </Alert>
+            )}
+
+            {/* Vertical timeline activity history */}
+            <Box mt={10}>
+                <Heading 
+                    size="sm" 
+                    fontWeight="800" 
+                    fontFamily="'Plus Jakarta Sans', sans-serif"
+                    color="gray.700"
+                    mb={6}
+                >
+                    Recent Activity Timeline
+                </Heading>
+                
+                <Box position="relative" pl={6} _before={{
+                    content: '""',
+                    position: 'absolute',
+                    left: '12px',
+                    top: '8px',
+                    bottom: '8px',
+                    width: '2px',
+                    bg: 'gray.200'
+                }}>
+                    <VStack spacing={5} align="stretch">
+                        {applications.slice(0, 5).map((app) => (
+                            <Box key={app.id} position="relative">
+                                {/* Timeline Dot */}
+                                <Box
+                                    position="absolute"
+                                    left="-22px"
+                                    top="4px"
+                                    w="14px"
+                                    h="14px"
+                                    borderRadius="full"
+                                    bg={`${getStatusColor(app.status)}.500`}
+                                    border="3px solid white"
+                                    shadow="sm"
+                                />
+                                <Box
+                                    bg={cardBg}
+                                    p={4}
+                                    borderRadius="xl"
+                                    border="1px solid"
+                                    borderColor={borderColor}
+                                    shadow="0 2px 8px rgba(0, 0, 0, 0.01)"
+                                >
+                                    <Flex justify="space-between" align="start" flexWrap="wrap" gap={2}>
+                                        <Box>
+                                            <Text fontSize="xs" fontWeight="800" color="gray.700">
+                                                {app.jobTitle || 'Unknown Job'} at {app.company || 'Unknown Company'}
+                                            </Text>
+                                            <Text fontSize="10px" color="gray.500" mt={1}>
+                                                Pipeline Status: <Badge colorScheme={getStatusColor(app.status)} fontSize="9px" borderRadius="full" px={2}>{app.status || 'N/A'}</Badge>
+                                            </Text>
+                                        </Box>
+                                        <Text fontSize="9px" color="gray.400" fontWeight="bold">
+                                            {formatTimeAgo(app.updatedAt || app.createdAt)}
+                                        </Text>
+                                    </Flex>
+                                </Box>
+                            </Box>
+                        ))}
+                    </VStack>
+                </Box>
+            </Box>
         </Box>
     );
 };

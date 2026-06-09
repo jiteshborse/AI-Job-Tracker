@@ -30,13 +30,18 @@ fastify.register(fastifyMultipart, {
   }
 });
 
+// Import database
+const database = require('./database');
+
 // Import routes
+const authRoutes = require('./routes/auth');
 const jobRoutes = require('./routes/jobs');
 const resumeRoutes = require('./routes/resume');
 const aiRoutes = require('./routes/ai');
 const applicationRoutes = require('./routes/applications');
 
 // Register routes with prefixes
+fastify.register(authRoutes, { prefix: '/api/auth' });
 fastify.register(jobRoutes, { prefix: '/api/jobs' });
 fastify.register(resumeRoutes, { prefix: '/api/resume' });
 fastify.register(aiRoutes, { prefix: '/api/ai' });
@@ -109,6 +114,9 @@ fastify.setErrorHandler((error, request, reply) => {
 // Start server
 const start = async () => {
     try {
+        // Initialize persistent database
+        await database.init();
+
         const port = process.env.PORT || 5000;
         const host = process.env.HOST || '0.0.0.0';
 
